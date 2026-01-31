@@ -70,7 +70,7 @@ export default function Home() {
               Join the Kush Community
             </h2>
             <p className="text-white/80 mb-8">
-              Create your watchlist, save your favorite foods, and be part of Uganda's growing entertainment platform.
+              Create your watchlist, save your favorite foods, and be part of Uganda&apos;s growing entertainment platform.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="px-8 py-3 rounded-lg bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-colors">

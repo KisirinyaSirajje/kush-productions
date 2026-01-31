@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone } from "lucide-react";
+import { useAuthStore } from "@/lib/store/authStore";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuthStore();
+  
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   
   // Form fields
   const [fullName, setFullName] = useState("");
@@ -16,18 +23,36 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
     
     if (!isLogin && password !== confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
+      setIsLoading(false);
       return;
     }
     
-    // Auth will be implemented with backend API
     if (isLogin) {
-      console.log("Login:", { email, password });
+      // Login
+      const result = await login(email, password);
+      setIsLoading(false);
+      
+      if (result.success) {
+        const user = useAuthStore.getState().user;
+        if (user?.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
+      } else {
+        setError(result.error || "Login failed");
+      }
     } else {
+      // Sign up (not implemented yet)
+      setIsLoading(false);
+      alert("Sign up functionality will be connected to backend API");
       console.log("Sign up:", { fullName, email, phone, password });
     }
   };
@@ -67,7 +92,21 @@ export default function LoginPage() {
                 ? "Sign in to access your watchlist and favorites" 
                 : "Join Kush Films and start building your collection"}
             </p>
+            {isLogin && (
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm">
+                <p className="text-muted-foreground mb-2">Demo Credentials:</p>
+                <p className="text-foreground"><strong>Admin:</strong> admin@kushfilms.com / admin123</p>
+                <p className="text-foreground"><strong>User:</strong> user@kushfilms.com / user123</p>
+              </div>
+            )}
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-sm">
+              {error}
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -187,8 +226,12 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 btn-glow text-primary-foreground rounded-lg font-semibold transition-colors">
-              {isLogin ? "Sign In" : "Create Account"}
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full h-12 bg-primary hover:bg-primary/90 btn-glow text-primary-foreground rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Please wait..." : (isLogin ? "Sign In" : "Create Account")}
             </button>
           </form>
 
