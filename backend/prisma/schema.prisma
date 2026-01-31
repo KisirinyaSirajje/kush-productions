@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== USERS & AUTH =====
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String?
+  avatar        String?
+  role          Role      @default(USER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  watchHistory  WatchHistory[]
+  favorites     Favorite[]
+  comments      Comment[]
+  ratings       Rating[]
+  
+  @@index([email])
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ===== MOVIES =====
+model Movie {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  thumbnailUrl    String
+  videoUrl        String    // Cloudinary URL
+  duration        Int       // in seconds
+  releaseYear     Int?
+  director        String?
+  cast            String[]
+  language        String    @default("English")
+  isFeatured      Boolean   @default(false)
+  viewCount       Int       @default(0)
+  averageRating   Float     @default(0)
+  ratingCount     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  categories      MovieCategory[]
+  watchHistory    WatchHistory[]
+  favorites       Favorite[]
+  comments        Comment[]
+  ratings         Rating[]
+
+  @@index([title])
+  @@index([isFeatured])
+  @@index([createdAt])
+  @@map("movies")
+}
+
+// ===== CATEGORIES =====
+model Category {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?
+  imageUrl    String?
+  order       Int             @default(0)
+  createdAt   DateTime        @default(now())
+
+  movies      MovieCategory[]
+
+  @@index([slug])
+  @@map("categories")
+}
+
+model MovieCategory {
+  movieId     String
+  categoryId  String
+  
+  movie       Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, categoryId])
+  @@map("movie_categories")
+}
+
+// ===== USER INTERACTIONS =====
+model WatchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  movieId     String
+  watchedAt   DateTime @default(now())
+  progress    Int      @default(0) // seconds watched
+  completed   Boolean  @default(false)
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@index([userId])
+  @@index([watchedAt])
+  @@map("watch_history")
+}
+
+model Favorite {
+  id          String   @id @default(cuid())
+  userId      String
+  movieId     String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  userId      String
+  movieId     String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([movieId])
+  @@index([createdAt])
+  @@map("comments")
+}
+
+model Rating {
+  id          String   @id @default(cuid())
+  userId      String
+  movieId     String
+  rating      Int      // 1-5 stars
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@index([movieId])
+  @@map("ratings")
+}
