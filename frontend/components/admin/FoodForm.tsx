@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save } from "lucide-react";
+import { Save, Upload, X } from "lucide-react";
+import { apiClient } from "@/lib/api/client";
 
 export interface FoodFormData {
-  id?: number;
+  id?: string;
   name: string;
   category: string;
   price: string;
@@ -32,6 +33,9 @@ export default function FoodForm({ food, onSubmit, onCancel }: FoodFormProps) {
   });
 
   const [ingredientInput, setIngredientInput] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (food) {
@@ -44,6 +48,9 @@ export default function FoodForm({ food, onSubmit, onCancel }: FoodFormProps) {
         image: food.image || "",
         ingredients: food.ingredients || [],
       });
+      if (food.image) {
+        setImagePreview(food.image);
+      }
     }
   }, [food]);
 
@@ -74,6 +81,63 @@ export default function FoodForm({ food, onSubmit, onCancel }: FoodFormProps) {
       ...prev,
       ingredients: prev.ingredients?.filter((_, i) => i !== index) || [],
     }));
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to backend
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiClient.post('/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Update form with uploaded URL
+      setFormData((prev) => ({
+        ...prev,
+        image: response.data.url,
+      }));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      setUploadError(err.response?.data?.error || 'Failed to upload image');
+      setImagePreview(null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const clearImage = () => {
+    setImagePreview(null);
+    setFormData((prev) => ({ ...prev, image: '' }));
+    setUploadError(null);
   };
 
   return (
@@ -145,17 +209,49 @@ export default function FoodForm({ food, onSubmit, onCancel }: FoodFormProps) {
 
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Image URL *
+            Food Image *
           </label>
-          <input
-            type="url"
-            name="image"
-            value={formData.image}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-            placeholder="https://example.com/food-image.jpg"
-          />
+          
+          {imagePreview ? (
+            <div className="relative inline-block">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-64 h-48 object-cover rounded-lg border border-border"
+              />
+              <button
+                type="button"
+                onClick={clearImage}
+                className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="flex items-center justify-center w-full h-32 px-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-accent transition-colors">
+                <div className="flex flex-col items-center">
+                  <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                  <span className="text-sm text-muted-foreground">
+                    {isUploading ? 'Uploading...' : 'Click to upload food image'}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG, WEBP up to 5MB
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
+              {uploadError && (
+                <p className="text-sm text-destructive">{uploadError}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,18 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
 import SectionHeader from "@/components/SectionHeader";
 import { Search, Filter, TrendingUp } from "lucide-react";
-import { trendingMovies, popularMovies } from "@/data/mockData";
+import apiClient from "@/lib/api/client";
+
+interface Movie {
+  id: string;
+  title: string;
+  releaseYear: number;
+  thumbnailUrl: string;
+  duration: number;
+  rating?: number;
+}
 
 export default function MoviesPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const allMovies = [...trendingMovies, ...popularMovies];
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get('/api/movies');
+        setMovies(response.data.movies || []);
+      } catch (error) {
+        console.error('Error fetching movies:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMovies();
+  }, []);
   
-  const filteredMovies = allMovies.filter(movie =>
+  const filteredMovies = movies.filter(movie =>
     movie.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -55,50 +80,40 @@ export default function MoviesPage() {
         </div>
       </section>
 
-      {/* Trending Section */}
+      {/* Movies Grid */}
       <section className="container mx-auto px-4 py-12">
         <SectionHeader
-          title="Trending Now"
-          subtitle="What everyone's watching"
+          title={searchQuery ? "Search Results" : "All Movies"}
+          subtitle={searchQuery ? `Found ${filteredMovies.length} movies` : "Browse our complete collection"}
         />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-          {(searchQuery ? filteredMovies.slice(0, 6) : trendingMovies).map((movie, index) => (
-            <MovieCard
-              key={movie.id}
-              {...movie}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.05}s` }}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Popular Section */}
-      {!searchQuery && (
-        <section className="container mx-auto px-4 py-12">
-          <SectionHeader
-            title="Popular Films"
-            subtitle="Highly rated movies you'll love"
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
-            {popularMovies.map((movie, index) => (
-              <MovieCard
-                key={movie.id}
-                {...movie}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading movies...</p>
+          </div>
+        ) : filteredMovies.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No movies found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+            {filteredMovies.map((movie, index) => (
+              <MovieCard 
+                key={movie.id} 
+                id={movie.id}
+                title={movie.title}
+                year={movie.releaseYear}
+                posterPath={movie.thumbnailUrl}
+                duration={`${Math.floor(movie.duration / 60)}m`}
+                rating={movie.rating || 8.0}
+                category="Movie"
                 className="animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.05}s` }}
               />
             ))}
           </div>
-        </section>
-      )}
-
-      {/* No Results */}
-      {searchQuery && filteredMovies.length === 0 && (
-        <div className="container mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground text-lg">No movies found for &quot;{searchQuery}&quot;</p>
-        </div>
-      )}
+        )}
+      </section>
 
       <Footer />
     </div>

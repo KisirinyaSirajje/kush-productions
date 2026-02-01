@@ -1,17 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import { foods as initialFoods, type Food } from "@/data/mockData";
+import { useState, useEffect } from "react";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import Modal from "@/components/admin/Modal";
 import FoodForm, { FoodFormData } from "@/components/admin/FoodForm";
+import apiClient from "@/lib/api/client";
+
+interface Food {
+  id: string;
+  name: string;
+  category: string;
+  price: string;
+  location?: string;
+  image: string;
+  description: string;
+  ingredients?: string[];
+}
 
 export default function AdminFoodsPage() {
-  const [foods, setFoods] = useState<Food[]>(initialFoods);
+  const [foods, setFoods] = useState<Food[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFood, setEditingFood] = useState<FoodFormData | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch foods from API
+  useEffect(() => {
+    fetchFoods();
+  }, []);
+
+  const fetchFoods = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiClient.get('/api/foods');
+      setFoods(response.data.foods);
+      setError(null);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load foods');
+      console.error('Error fetching foods:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredFoods = foods.filter((food) =>
     food.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -37,33 +70,51 @@ export default function AdminFoodsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteFood = (id: number) => {
-    if (confirm("Are you sure you want to delete this food item?")) {
+  const handleDeleteFood = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this food item?")) return;
+
+    try {
+      await apiClient.delete(`/api/admin/foods/${id}`);
       setFoods(foods.filter((f) => f.id !== id));
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      alert(error.response?.data?.error || 'Failed to delete food');
     }
   };
 
-  const handleSubmitFood = (data: FoodFormData) => {
-    if (editingFood && editingFood.id) {
-      // Update existing food
-      setFoods(foods.map((f) => (f.id === editingFood.id ? { 
-        ...f, 
-        ...data,
-        location: data.location || "Kampala, Uganda",
-        ingredients: data.ingredients || []
-      } : f)));
-    } else {
-      // Add new food
-      const newFood: Food = {
-        ...data,
-        id: Math.max(...foods.map((f) => f.id), 0) + 1,
-        location: data.location || "Kampala, Uganda",
-        ingredients: data.ingredients || []
-      };
-      setFoods([newFood, ...foods]);
+  const handleSubmitFood = async (data: FoodFormData) => {
+    try {
+      if (editingFood && editingFood.id) {
+        // Update existing food
+        const response = await apiClient.put(`/api/admin/foods/${editingFood.id}`, {
+          name: data.name,
+          category: data.category,
+          price: data.price,
+          location: data.location || "Kampala, Uganda",
+          description: data.description,
+          image: data.image,
+          ingredients: data.ingredients || [],
+        });
+        setFoods(foods.map((f) => (f.id === editingFood.id ? response.data.food : f)));
+      } else {
+        // Create new food
+        const response = await apiClient.post('/api/admin/foods', {
+          name: data.name,
+          category: data.category,
+          price: data.price,
+          location: data.location || "Kampala, Uganda",
+          description: data.description,
+          image: data.image,
+          ingredients: data.ingredients || [],
+        });
+        setFoods([...foods, response.data.food]);
+      }
+      setIsModalOpen(false);
+      setEditingFood(undefined);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      alert(error.response?.data?.error || 'Failed to save food');
     }
-    setIsModalOpen(false);
-    setEditingFood(undefined);
   };
 
   return (
@@ -97,39 +148,56 @@ export default function AdminFoodsPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass-card p-4 rounded-xl border border-border/50">
-          <p className="text-sm text-muted-foreground mb-1">Total Foods</p>
-          <p className="text-2xl font-bold text-foreground">{foods.length}</p>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading foods...</p>
         </div>
-        <div className="glass-card p-4 rounded-xl border border-border/50">
-          <p className="text-sm text-muted-foreground mb-1">Categories</p>
-          <p className="text-2xl font-bold text-accent">4</p>
-        </div>
-        <div className="glass-card p-4 rounded-xl border border-border/50">
-          <p className="text-sm text-muted-foreground mb-1">Avg Price</p>
-          <p className="text-2xl font-bold text-foreground">UGX 7,000</p>
-        </div>
-        <div className="glass-card p-4 rounded-xl border border-border/50">
-          <p className="text-sm text-muted-foreground mb-1">Total Orders</p>
-          <p className="text-2xl font-bold text-green-500">1,234</p>
-        </div>
-      </div>
+      )}
 
-      {/* Foods Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFoods.map((food) => (
-          <div key={food.id} className="glass-card rounded-xl border border-border/50 overflow-hidden card-hover">
-            <div className="relative aspect-[4/3]">
-              <img
-                src={food.image}
-                alt={food.name}
-                className="w-full h-full object-cover"
-              />
-              <span className="absolute top-3 left-3 px-3 py-1 bg-accent/90 text-accent-foreground text-xs font-semibold rounded-full">
-                {food.category}
-              </span>
+      {/* Error State */}
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500">
+          {error}
+        </div>
+      )}
+
+      {/* Stats */}
+      {!isLoading && !error && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="glass-card p-4 rounded-xl border border-border/50">
+              <p className="text-sm text-muted-foreground mb-1">Total Foods</p>
+              <p className="text-2xl font-bold text-foreground">{foods.length}</p>
+            </div>
+            <div className="glass-card p-4 rounded-xl border border-border/50">
+              <p className="text-sm text-muted-foreground mb-1">Categories</p>
+              <p className="text-2xl font-bold text-accent">4</p>
+            </div>
+            <div className="glass-card p-4 rounded-xl border border-border/50">
+              <p className="text-sm text-muted-foreground mb-1">Avg Price</p>
+              <p className="text-2xl font-bold text-foreground">UGX 7,000</p>
+            </div>
+            <div className="glass-card p-4 rounded-xl border border-border/50">
+              <p className="text-sm text-muted-foreground mb-1">Total Orders</p>
+              <p className="text-2xl font-bold text-green-500">1,234</p>
+            </div>
+          </div>
+
+          {/* Foods Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredFoods.map((food) => (
+              <div key={food.id} className="glass-card rounded-xl border border-border/50 overflow-hidden card-hover">
+                <div className="relative aspect-[4/3]">
+                  <img
+                    src={food.image}
+                    alt={food.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute top-3 left-3 px-3 py-1 bg-accent/90 text-accent-foreground text-xs font-semibold rounded-full">
+                    {food.category}
+                  </span>
             </div>
             <div className="p-4">
               <h3 className="text-lg font-semibold text-foreground mb-2">{food.name}</h3>
@@ -163,7 +231,9 @@ export default function AdminFoodsPage() {
             </div>
           </div>
         ))}
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Add/Edit Modal */}
       <Modal

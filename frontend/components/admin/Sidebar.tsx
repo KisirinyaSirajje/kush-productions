@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuthStore } from "@/lib/store/authStore";
 import { 
   LayoutDashboard, 
   Film, 
@@ -89,7 +90,6 @@ export default function Sidebar() {
           <button 
             onClick={() => {
               if (typeof window !== 'undefined') {
-                const { useAuthStore } = require('@/lib/store/authStore');
                 useAuthStore.getState().logout();
                 window.location.href = '/';
               }

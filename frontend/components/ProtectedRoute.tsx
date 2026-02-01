@@ -19,7 +19,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
       return;
     }
 
-    if (requireAdmin && user?.role !== 'admin') {
+    if (requireAdmin && user?.role !== 'ADMIN') {
       router.push('/');
       return;
     }
@@ -36,7 +36,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
     );
   }
 
-  if (requireAdmin && user?.role !== 'admin') {
+  if (requireAdmin && user?.role !== 'ADMIN') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

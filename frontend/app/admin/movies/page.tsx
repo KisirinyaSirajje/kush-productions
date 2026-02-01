@@ -1,22 +1,53 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { trendingMovies, popularMovies, type Movie } from "@/data/mockData";
+import { useState, useEffect } from "react";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import Modal from "@/components/admin/Modal";
 import MovieForm, { MovieFormData } from "@/components/admin/MovieForm";
+import apiClient from "@/lib/api/client";
+
+interface Movie {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  duration: number;
+  releaseYear: number;
+  rating?: number;
+  category?: string;
+  posterPath?: string;
+  year?: number;
+}
 
 export default function AdminMoviesPage() {
-  const [movies, setMovies] = useState<Movie[]>([...trendingMovies, ...popularMovies]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMovie, setEditingMovie] = useState<MovieFormData | undefined>();
-  
-  // Static views data to avoid hydration errors
-  const movieViews = useMemo(() => {
-    return movies.map((_, index) => 45000 - (index * 3000));
-  }, [movies]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch movies from API
+  useEffect(() => {
+    fetchMovies();
+  }, []);
+
+  const fetchMovies = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiClient.get('/api/movies');
+      setMovies(response.data.movies);
+      setError(null);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load movies');
+      console.error('Error fetching movies:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredMovies = movies.filter((movie) =>
     movie.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -31,41 +62,59 @@ export default function AdminMoviesPage() {
     setEditingMovie({
       id: movie.id,
       title: movie.title,
-      year: movie.year.toString(),
-      category: movie.category,
-      rating: movie.rating,
-      duration: movie.duration,
-      posterPath: movie.posterPath,
-      description: movie.description || "A captivating story that will keep you on the edge of your seat.",
+      year: movie.releaseYear?.toString() || movie.year?.toString() || new Date().getFullYear().toString(),
+      category: movie.category || "Drama",
+      rating: movie.rating || 8.0,
+      duration: movie.duration.toString(),
+      posterPath: movie.thumbnailUrl || movie.posterPath || "",
+      description: movie.description || "",
     });
     setIsModalOpen(true);
   };
 
-  const handleDeleteMovie = (id: number) => {
-    if (confirm("Are you sure you want to delete this movie?")) {
+  const handleDeleteMovie = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this movie?")) return;
+
+    try {
+      await apiClient.delete(`/api/admin/movies/${id}`);
       setMovies(movies.filter((m) => m.id !== id));
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      alert(error.response?.data?.error || 'Failed to delete movie');
     }
   };
 
-  const handleSubmitMovie = (data: MovieFormData) => {
-    if (editingMovie && editingMovie.id) {
-      // Update existing movie
-      setMovies(movies.map((m) => (m.id === editingMovie.id ? { 
-        ...m, 
-        ...data, 
-        year: parseInt(data.year) 
-      } : m)));
-    } else {
-      // Add new movie
-      const newMovie: Movie = {
-        ...data,
-        id: Math.max(...movies.map((m) => m.id), 0) + 1,
-        year: parseInt(data.year),
-      };
-      setMovies([newMovie, ...movies]);
+  const handleSubmitMovie = async (data: MovieFormData) => {
+    try {
+      if (editingMovie && editingMovie.id) {
+        // Update existing movie
+        const response = await apiClient.put(`/api/admin/movies/${editingMovie.id}`, {
+          title: data.title,
+          description: data.description,
+          thumbnailUrl: data.posterPath,
+          videoUrl: `https://example.com/videos/${data.title.toLowerCase().replace(/\s+/g, '-')}.mp4`,
+          duration: parseInt(data.duration),
+          releaseYear: parseInt(data.year),
+        });
+        setMovies(movies.map((m) => (m.id === editingMovie.id ? response.data.movie : m)));
+      } else {
+        // Create new movie
+        const response = await apiClient.post('/api/admin/movies', {
+          title: data.title,
+          description: data.description,
+          thumbnailUrl: data.posterPath,
+          videoUrl: `https://example.com/videos/${data.title.toLowerCase().replace(/\s+/g, '-')}.mp4`,
+          duration: parseInt(data.duration),
+          releaseYear: parseInt(data.year),
+        });
+        setMovies([response.data.movie, ...movies]);
+      }
+      setIsModalOpen(false);
+      setEditingMovie(undefined);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      alert(error.response?.data?.error || 'Failed to save movie');
     }
-    setIsModalOpen(false);
-    setEditingMovie(undefined);
   };
 
   return (
@@ -99,7 +148,24 @@ export default function AdminMoviesPage() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading movies...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500">
+          {error}
+        </div>
+      )}
+
       {/* Stats */}
+      {!isLoading && !error && (
+        <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-card p-4 rounded-xl border border-border/50">
           <p className="text-sm text-muted-foreground mb-1">Total Movies</p>
@@ -140,24 +206,24 @@ export default function AdminMoviesPage() {
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <img
-                        src={movie.posterPath}
+                        src={movie.thumbnailUrl || movie.posterPath || "https://via.placeholder.com/100x150"}
                         alt={movie.title}
                         className="w-12 h-16 object-cover rounded"
                       />
                       <div>
                         <p className="font-medium text-foreground">{movie.title}</p>
-                        <p className="text-sm text-muted-foreground">{movie.year}</p>
+                        <p className="text-sm text-muted-foreground">{movie.releaseYear || movie.year}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 text-muted-foreground">{movie.category}</td>
+                  <td className="p-4 text-muted-foreground">{movie.category || "N/A"}</td>
                   <td className="p-4">
                     <span className="inline-flex items-center gap-1 text-amber-500 font-semibold">
-                      {movie.rating} ★
+                      {movie.rating || "N/A"} ★
                     </span>
                   </td>
-                  <td className="p-4 text-muted-foreground">{movie.duration}</td>
-                  <td className="p-4 text-muted-foreground">{movieViews[movies.findIndex(m => m.id === movie.id)]?.toLocaleString()}</td>
+                  <td className="p-4 text-muted-foreground">{Math.floor(movie.duration / 60)}m</td>
+                  <td className="p-4 text-muted-foreground">-</td>
                   <td className="p-4">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">
                       Published
@@ -194,6 +260,8 @@ export default function AdminMoviesPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
 
       {/* Add/Edit Modal */}
       <Modal

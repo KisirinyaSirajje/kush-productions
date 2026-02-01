@@ -1,9 +1,22 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
+import { pipeline } from 'stream/promises';
+import { createWriteStream } from 'fs';
+import { join } from 'path';
+import { randomBytes } from 'crypto';
+
+// Extend Fastify types
+declare module 'fastify' {
+  interface FastifyInstance {
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+}
 
 export const prisma = new PrismaClient();
 const app = Fastify({ logger: true });
@@ -18,8 +31,19 @@ app.register(jwt, {
   secret: process.env.JWT_SECRET || 'your-secret-key',
 });
 
+app.register(multipart, {
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
+
+app.register(fastifyStatic, {
+  root: join(__dirname, '..', 'public'),
+  prefix: '/public/',
+});
+
 // ===== AUTH MIDDLEWARE =====
-app.decorate('authenticate', async (request: any, reply: any) => {
+app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
   try {
     await request.jwtVerify();
   } catch (err) {
@@ -44,6 +68,39 @@ const loginSchema = z.object({
 // Health check
 app.get('/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };
+});
+
+// ===== FILE UPLOAD =====
+app.post('/api/upload', { preHandler: [app.authenticate] }, async (request, reply) => {
+  try {
+    const data = await request.file();
+    
+    if (!data) {
+      return reply.status(400).send({ error: 'No file uploaded' });
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimeTypes.includes(data.mimetype)) {
+      return reply.status(400).send({ error: 'Invalid file type. Only images are allowed.' });
+    }
+
+    // Generate unique filename
+    const ext = data.filename.split('.').pop();
+    const filename = `${randomBytes(16).toString('hex')}.${ext}`;
+    const filepath = join(__dirname, '..', 'public', 'uploads', filename);
+
+    // Save file
+    await pipeline(data.file, createWriteStream(filepath));
+
+    // Return URL
+    const url = `http://localhost:${process.env.PORT || 4000}/public/uploads/${filename}`;
+    return { url };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    app.log.error(err);
+    return reply.status(500).send({ error: 'File upload failed', details: err.message });
+  }
 });
 
 // ===== AUTH ROUTES =====
@@ -104,7 +161,8 @@ app.post('/api/auth/login', async (request, reply) => {
         email: user.email, 
         name: user.name, 
         role: user.role,
-        avatar: user.avatar 
+        avatar: user.avatar,
+        subscription: user.subscription,
       },
       token,
     };
@@ -308,7 +366,7 @@ app.post('/api/ratings', { preHandler: [app.authenticate] }, async (request, rep
 
   // Update movie average rating
   const ratings = await prisma.rating.findMany({ where: { movieId } });
-  const average = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+  const average = ratings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / ratings.length;
   
   await prisma.movie.update({
     where: { id: movieId },
@@ -428,6 +486,109 @@ app.post('/api/admin/categories', { preHandler: [app.authenticate] }, async (req
   });
 
   return { category };
+});
+
+// ===== FOODS ROUTES =====
+app.get('/api/foods', async (request) => {
+  const { category, search } = request.query as any;
+  
+  const where: any = {};
+  
+  if (category) {
+    where.category = category;
+  }
+  
+  if (search) {
+    where.name = {
+      contains: search,
+      mode: 'insensitive',
+    };
+  }
+  
+  const foods = await prisma.food.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return { foods, total: foods.length };
+});
+
+app.get('/api/foods/:id', async (request, reply) => {
+  const { id } = request.params as any;
+  
+  const food = await prisma.food.findUnique({
+    where: { id },
+  });
+
+  if (!food) {
+    return reply.status(404).send({ error: 'Food not found' });
+  }
+
+  return { food };
+});
+
+app.post('/api/admin/foods', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const data = request.body as any;
+  
+  const food = await prisma.food.create({
+    data: {
+      name: data.name,
+      category: data.category,
+      price: data.price,
+      location: data.location,
+      image: data.image,
+      description: data.description,
+      ingredients: data.ingredients || [],
+    },
+  });
+
+  return { food };
+});
+
+app.put('/api/admin/foods/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const { id } = request.params as any;
+  const data = request.body as any;
+  
+  const food = await prisma.food.update({
+    where: { id },
+    data: {
+      name: data.name,
+      category: data.category,
+      price: data.price,
+      location: data.location,
+      image: data.image,
+      description: data.description,
+      ingredients: data.ingredients || [],
+    },
+  });
+
+  return { food };
+});
+
+app.delete('/api/admin/foods/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const { id } = request.params as any;
+  
+  await prisma.food.delete({ where: { id } });
+
+  return { success: true };
 });
 
 export default app;

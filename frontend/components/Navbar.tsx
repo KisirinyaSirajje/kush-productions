@@ -64,7 +64,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             {isAuthenticated && user ? (
               <>
-                {user.role === 'admin' && (
+                {user.role === 'ADMIN' && (
                   <Link
                     href="/admin"
                     className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"

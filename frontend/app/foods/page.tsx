@@ -1,15 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FoodCard from "@/components/FoodCard";
 import SectionHeader from "@/components/SectionHeader";
 import { Search, Filter, UtensilsCrossed } from "lucide-react";
-import { foods } from "@/data/mockData";
+import apiClient from "@/lib/api/client";
+
+interface Food {
+  id: string;
+  name: string;
+  category: string;
+  price: string;
+  image: string;
+  description: string;
+  location?: string;
+}
 
 export default function FoodsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [foods, setFoods] = useState<Food[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFoods = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get('/api/foods');
+        setFoods(response.data.foods || []);
+      } catch (error) {
+        console.error('Error fetching foods:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFoods();
+  }, []);
   
   const filteredFoods = foods.filter(food =>
     food.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,27 +85,37 @@ export default function FoodsPage() {
       {/* Foods Grid */}
       <section className="container mx-auto px-4 py-12">
         <SectionHeader
-          title="All Dishes"
-          subtitle={`${filteredFoods.length} delicious options`}
+          title={searchQuery ? "Search Results" : "All Dishes"}
+          subtitle={searchQuery ? `Found ${filteredFoods.length} items` : `${filteredFoods.length} delicious options`}
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFoods.map((food, index) => (
-            <FoodCard
-              key={food.id}
-              {...food}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.05}s` }}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading foods...</p>
+          </div>
+        ) : filteredFoods.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">{searchQuery ? `No foods found for "${searchQuery}"` : "No foods available"}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredFoods.map((food, index) => (
+              <FoodCard
+                key={food.id}
+                id={food.id}
+                name={food.name}
+                category={food.category}
+                price={food.price}
+                image={food.image}
+                description={food.description}
+                location={food.location}
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              />
+            ))}
+          </div>
+        )}
       </section>
-
-      {/* No Results */}
-      {searchQuery && filteredFoods.length === 0 && (
-        <div className="container mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground text-lg">No foods found for &quot;{searchQuery}&quot;</p>
-        </div>
-      )}
 
       <Footer />
     </div>

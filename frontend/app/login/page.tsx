@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, Phone } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
+import apiClient from "@/lib/api/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function LoginPage() {
       
       if (result.success) {
         const user = useAuthStore.getState().user;
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
           router.push('/admin');
         } else {
           router.push('/');
@@ -50,10 +51,35 @@ export default function LoginPage() {
         setError(result.error || "Login failed");
       }
     } else {
-      // Sign up (not implemented yet)
-      setIsLoading(false);
-      alert("Sign up functionality will be connected to backend API");
-      console.log("Sign up:", { fullName, email, phone, password });
+      // Sign up
+      try {
+        const response = await apiClient.post('/api/auth/register', {
+          name: fullName,
+          email: email,
+          password: password,
+        });
+
+        setIsLoading(false);
+
+        // Registration successful - automatically log them in
+        const { user, token } = response.data;
+        useAuthStore.setState({ 
+          user: {
+            ...user,
+            role: user.role as 'USER' | 'ADMIN',
+          }, 
+          token, 
+          isAuthenticated: true 
+        });
+        
+        // Redirect to home
+        router.push('/');
+      } catch (err: unknown) {
+        setIsLoading(false);
+        const error = err as { response?: { data?: { error?: string } } };
+        setError(error.response?.data?.error || 'Unable to connect to server. Please try again.');
+        console.error('Registration error:', err);
+      }
     }
   };
 
@@ -176,7 +202,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10 h-12 bg-card border-border/50 w-full rounded-lg px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   required
-                  minLength={8}
+                  minLength={isLogin ? undefined : 8}
                 />
                 <button
                   type="button"

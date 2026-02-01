@@ -105,6 +105,62 @@ async function main() {
     console.log('✅ Movie created:', movie.title);
   }
 
+  // Create sample Foods
+  const foods = [
+    {
+      name: 'Rolex',
+      category: 'Street Food',
+      price: 'UGX 3,000',
+      location: 'Kampala, Uganda',
+      image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800',
+      description: 'A popular Ugandan street food made with eggs and vegetables rolled in a chapati.',
+      ingredients: ['Eggs', 'Chapati', 'Cabbage', 'Tomatoes', 'Onions'],
+    },
+    {
+      name: 'Matooke',
+      category: 'Traditional',
+      price: 'UGX 5,000',
+      location: 'Kampala, Uganda',
+      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
+      description: 'A traditional Ugandan dish made from steamed green bananas, often served with groundnut sauce.',
+      ingredients: ['Green bananas', 'Groundnut sauce', 'Spices'],
+    },
+    {
+      name: 'Luwombo',
+      category: 'Main Course',
+      price: 'UGX 15,000',
+      location: 'Kampala, Uganda',
+      image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800',
+      description: 'A royal delicacy of meat, chicken, or fish steamed in banana leaves with vegetables.',
+      ingredients: ['Chicken', 'Banana leaves', 'Mushrooms', 'Peanut sauce', 'Vegetables'],
+    },
+    {
+      name: 'Muchomo',
+      category: 'Street Food',
+      price: 'UGX 10,000',
+      location: 'Kampala, Uganda',
+      image: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800',
+      description: 'Grilled meat skewers, a popular street food in Uganda often served with roasted plantains.',
+      ingredients: ['Beef', 'Goat meat', 'Spices', 'Salt'],
+    },
+    {
+      name: 'Kikomando',
+      category: 'Street Food',
+      price: 'UGX 2,500',
+      location: 'Kampala, Uganda',
+      image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800',
+      description: 'A beloved Ugandan dish consisting of beans and chapati, simple yet satisfying.',
+      ingredients: ['Beans', 'Chapati', 'Onions', 'Tomatoes'],
+    },
+  ];
+
+  for (const food of foods) {
+    await prisma.food.create({
+      data: food,
+    });
+    console.log('✅ Food created:', food.name);
+  }
+
   console.log('🎉 Database seeded successfully!');
 }
 

@@ -1,9 +1,15 @@
 import Link from "next/link";
-import { Heart, Star } from "lucide-react";
+import { Heart, Star, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Movie } from "@/data/mockData";
 
-interface MovieCardProps extends Movie {
+interface MovieCardProps {
+  id: string | number;
+  title: string;
+  posterPath?: string;
+  rating?: number;
+  year?: number;
+  duration?: string;
+  category?: string;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -13,12 +19,21 @@ const MovieCard = ({ id, title, posterPath, rating, year, className, style }: Mo
     <Link href={`/movies/${id}`} className={cn("group block", className)} style={style}>
       <div className="relative overflow-hidden rounded-xl glass-card card-hover">
         {/* Image Container */}
-        <div className="aspect-[2/3] overflow-hidden">
-          <img
-            src={posterPath}
-            alt={title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+        <div className="aspect-[2/3] overflow-hidden bg-muted">
+          {posterPath ? (
+            <img
+              src={posterPath}
+              alt={title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={cn("w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5", posterPath && "hidden")}>
+            <Film className="w-12 h-12 text-muted-foreground" />
+          </div>
         </div>
 
         {/* Rating Badge */}

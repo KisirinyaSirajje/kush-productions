@@ -1,12 +1,57 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
 import MovieCard from "@/components/MovieCard";
 import FoodCard from "@/components/FoodCard";
 import SectionHeader from "@/components/SectionHeader";
-import { trendingMovies, foods } from "@/data/mockData";
+import apiClient from "@/lib/api/client";
+
+interface Movie {
+  id: string;
+  title: string;
+  releaseYear: number;
+  thumbnailUrl: string;
+  duration: number;
+  rating?: number;
+}
+
+interface Food {
+  id: string;
+  name: string;
+  category: string;
+  price: string;
+  image: string;
+  description: string;
+  location?: string;
+}
 
 export default function Home() {
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [foods, setFoods] = useState<Food[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [moviesRes, foodsRes] = await Promise.all([
+          apiClient.get('/api/movies'),
+          apiClient.get('/api/foods')
+        ]);
+        setMovies(moviesRes.data.movies || []);
+        setFoods(foodsRes.data.foods || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -21,16 +66,28 @@ export default function Home() {
           subtitle="Discover the most popular movies right now"
           href="/movies"
         />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-          {trendingMovies.map((movie, index) => (
-            <MovieCard
-              key={movie.id}
-              {...movie}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+            {movies.slice(0, 6).map((movie, index) => (
+              <MovieCard
+                key={movie.id}
+                id={movie.id}
+                title={movie.title}
+                year={movie.releaseYear}
+                posterPath={movie.thumbnailUrl}
+                duration={`${Math.floor(movie.duration / 60)}m`}
+                rating={movie.rating || 8.0}
+                category="Movie"
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Featured Foods Section */}
@@ -40,16 +97,28 @@ export default function Home() {
           subtitle="Authentic Ugandan cuisine at your fingertips"
           href="/foods"
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {foods.slice(0, 3).map((food, index) => (
-            <FoodCard
-              key={food.id}
-              {...food}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {foods.slice(0, 3).map((food, index) => (
+              <FoodCard
+                key={food.id}
+                id={food.id}
+                name={food.name}
+                category={food.category}
+                price={food.price}
+                image={food.image}
+                description={food.description}
+                location={food.location}
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* CTA Section */}

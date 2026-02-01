@@ -1,24 +1,39 @@
 import Link from "next/link";
-import { Heart, ChefHat } from "lucide-react";
+import { Heart, ChefHat, UtensilsCrossed } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Food } from "@/data/mockData";
 
-interface FoodCardProps extends Food {
+interface FoodCardProps {
+  id: string | number;
+  name: string;
+  image?: string;
+  category: string;
+  description: string;
+  price: string;
+  location?: string;
   className?: string;
   style?: React.CSSProperties;
 }
 
-const FoodCard = ({ id, name, image, category, description, price, className, style }: FoodCardProps) => {
+const FoodCard = ({ id, name, image, category, description, price, location, className, style }: FoodCardProps) => {
   return (
     <Link href={`/foods/${id}`} className={cn("group block", className)} style={style}>
       <div className="relative overflow-hidden rounded-xl glass-card card-hover">
         {/* Image Container */}
-        <div className="aspect-[4/3] overflow-hidden">
-          <img
-            src={image}
-            alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+        <div className="aspect-[4/3] overflow-hidden bg-muted">
+          {image ? (
+            <img
+              src={image}
+              alt={name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={cn("w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent/5", image && "hidden")}>
+            <UtensilsCrossed className="w-12 h-12 text-muted-foreground" />
+          </div>
         </div>
 
         {/* Category Badge */}
