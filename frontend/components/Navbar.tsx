@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Film, UtensilsCrossed, Heart, Menu, X, LogOut, LayoutDashboard, ShoppingCart, User } from "lucide-react";
+import { Film, UtensilsCrossed, Heart, Menu, X, LogOut, LayoutDashboard, ShoppingCart, User, Clock } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -26,6 +26,7 @@ const Navbar = () => {
     { href: "/movies", label: "Films", icon: Film },
     { href: "/foods", label: "Foods", icon: UtensilsCrossed },
     { href: "/watchlist", label: "Watchlist", icon: Heart },
+    { href: "/history", label: "History", icon: Clock },
   ];
 
   return (

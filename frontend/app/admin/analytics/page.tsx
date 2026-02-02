@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import StatsCard from "@/components/admin/StatsCard";
 import { TrendingUp, Users, Eye, DollarSign, Play, Clock, MapPin, Smartphone } from "lucide-react";
+import { useAuthStore } from "@/lib/store/authStore";
 
 type MoviePerformance = {
   type: "Movies";
@@ -17,32 +20,80 @@ type FoodPerformance = {
   engagement: number;
 };
 
+type AnalyticsData = {
+  keyMetrics: {
+    totalRevenue: string;
+    activeUsers: string;
+    totalViews: string;
+    avgWatchTime: string;
+  };
+  geographic: Array<{ country: string; users: number; percentage: number }>;
+  deviceData: Array<{ device: string; users: number; percentage: number }>;
+  contentPerformance: (MoviePerformance | FoodPerformance)[];
+  trafficSources: Array<{ source: string; visits: number; percentage: number }>;
+};
+
 export default function AdminAnalyticsPage() {
-  const geographicData = [
-    { country: "Uganda", users: 8234, percentage: 66 },
-    { country: "Kenya", users: 2156, percentage: 17 },
-    { country: "Tanzania", users: 1234, percentage: 10 },
-    { country: "Rwanda", users: 567, percentage: 5 },
-    { country: "Others", users: 267, percentage: 2 },
-  ];
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuthStore();
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const deviceData = [
-    { device: "Mobile", users: 7234, percentage: 58 },
-    { device: "Desktop", users: 3890, percentage: 31 },
-    { device: "Tablet", users: 1334, percentage: 11 },
-  ];
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
 
-  const contentPerformance: (MoviePerformance | FoodPerformance)[] = [
-    { type: "Movies", views: 234567, watchTime: "45,234 hrs", engagement: 78.5 },
-    { type: "Foods", orders: 12456, revenue: "UGX 45.2M", engagement: 65.3 },
-  ];
+    if (user?.role !== 'ADMIN') {
+      router.push('/');
+      return;
+    }
 
-  const trafficSources = [
-    { source: "Direct", visits: 45678, percentage: 42 },
-    { source: "Social Media", visits: 32456, percentage: 30 },
-    { source: "Search", visits: 21234, percentage: 20 },
-    { source: "Referral", visits: 8756, percentage: 8 },
-  ];
+    const fetchAnalytics = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:4000/api/admin/analytics', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setAnalytics(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [isAuthenticated, user, router]);
+
+  if (!isAuthenticated || user?.role !== 'ADMIN') {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Failed to load analytics data</p>
+      </div>
+    );
+  }
+
+  const { keyMetrics, geographic, deviceData, contentPerformance, trafficSources } = analytics;
 
   return (
     <div className="space-y-8">
@@ -56,7 +107,7 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Revenue"
-          value="UGX 45.2M"
+          value={keyMetrics.totalRevenue}
           change="+18.2% vs last month"
           changeType="positive"
           icon={DollarSign}
@@ -64,7 +115,7 @@ export default function AdminAnalyticsPage() {
         />
         <StatsCard
           title="Active Users"
-          value="12,458"
+          value={keyMetrics.activeUsers}
           change="+12.5% growth"
           changeType="positive"
           icon={Users}
@@ -72,7 +123,7 @@ export default function AdminAnalyticsPage() {
         />
         <StatsCard
           title="Total Views"
-          value="234K"
+          value={keyMetrics.totalViews}
           change="+8.1% increase"
           changeType="positive"
           icon={Eye}
@@ -80,7 +131,7 @@ export default function AdminAnalyticsPage() {
         />
         <StatsCard
           title="Avg Watch Time"
-          value="24.5 min"
+          value={keyMetrics.avgWatchTime}
           change="+3.2% improvement"
           changeType="positive"
           icon={Clock}
@@ -95,7 +146,7 @@ export default function AdminAnalyticsPage() {
           <h2 className="text-xl font-semibold text-foreground">Geographic Distribution</h2>
         </div>
         <div className="space-y-4">
-          {geographicData.map((item) => (
+          {geographic.map((item) => (
             <div key={item.country}>
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-foreground">{item.country}</span>
