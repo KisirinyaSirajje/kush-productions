@@ -2,11 +2,17 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChefHat, MapPin, Heart, Share2, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, ChefHat, MapPin, Heart, Share2, UtensilsCrossed, ShoppingCart } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FoodCard from "@/components/FoodCard";
+import RatingInput from "@/components/RatingInput";
+import CommentSection from "@/components/CommentSection";
 import { apiClient } from "@/lib/api/client";
+import { useCartStore } from "@/lib/store/cartStore";
+import { useFavoritesStore } from "@/lib/store/favoritesStore";
+import { useAuthStore } from "@/lib/store/authStore";
+import { cn } from "@/lib/utils";
 
 interface Food {
   id: string;
@@ -25,6 +31,14 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   const [relatedFoods, setRelatedFoods] = useState<Food[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
+
+  const addToCart = useCartStore((state) => state.addToCart);
+  const { isAuthenticated } = useAuthStore();
+  const { favorites, fetchFavorites, addFavorite, removeFavorite, isFavorited } = useFavoritesStore();
+  
+  const favorited = food ? isFavorited('food', food.id) : false;
+  const favorite = food ? favorites.find((f) => f.type === 'food' && f.foodId === food.id) : null;
 
   useEffect(() => {
     const fetchFood = async () => {
@@ -50,6 +64,42 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
 
     fetchFood();
   }, [id]);
+
+  useEffect(() => {
+    if (isAuthenticated && favorites.length === 0) {
+      fetchFavorites();
+    }
+  }, [isAuthenticated, favorites.length, fetchFavorites]);
+
+  const handleAddToCart = () => {
+    if (!food) return;
+    
+    const priceNumber = parseFloat(food.price.replace(/[^0-9.]/g, ''));
+    addToCart({
+      foodId: food.id,
+      name: food.name,
+      price: priceNumber,
+      image: food.image,
+      category: food.category,
+    });
+
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+  };
+
+  const handleFavoriteClick = async () => {
+    if (!isAuthenticated || !food) return;
+
+    try {
+      if (favorited && favorite) {
+        await removeFavorite(favorite.id);
+      } else {
+        await addFavorite('food', food.id);
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -174,10 +224,34 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 sm:gap-4">
-                <button className="bg-accent hover:bg-accent/90 text-accent-foreground px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors text-sm sm:text-base flex items-center gap-2">
-                  <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="hidden sm:inline">Save to Favorites</span>
-                  <span className="sm:hidden">Save</span>
+                <button 
+                  onClick={handleAddToCart}
+                  className={cn(
+                    "bg-accent hover:bg-accent/90 text-accent-foreground px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base flex items-center gap-2",
+                    addedToCart && "bg-green-600 hover:bg-green-600"
+                  )}
+                >
+                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {addedToCart ? (
+                    <span>Added to Cart!</span>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Add to Cart</span>
+                      <span className="sm:hidden">Add</span>
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={handleFavoriteClick}
+                  disabled={!isAuthenticated}
+                  className={cn(
+                    "px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm sm:text-base flex items-center gap-2",
+                    !isAuthenticated && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <Heart className={cn("w-4 h-4 sm:w-5 sm:h-5", favorited && "fill-destructive text-destructive")} />
+                  <span className="hidden sm:inline">{favorited ? "Saved" : "Save to Favorites"}</span>
+                  <span className="sm:hidden">{favorited ? "Saved" : "Save"}</span>
                 </button>
                 <button className="px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:bg-muted transition-colors border border-border text-sm sm:text-base flex items-center gap-2">
                   <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -205,6 +279,14 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </section>
       )}
+
+      {/* Rating & Comments Section */}
+      <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto space-y-8">
+          <RatingInput type="food" itemId={id} onRatingSubmitted={() => window.location.reload()} />
+          <CommentSection type="food" itemId={id} />
+        </div>
+      </section>
 
       {/* Related Foods */}
       {relatedFoods.length > 0 && (

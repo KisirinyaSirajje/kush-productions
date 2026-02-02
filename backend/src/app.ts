@@ -269,47 +269,66 @@ app.get('/api/categories', async () => {
 });
 
 // ===== FAVORITES ROUTES =====
-app.post('/api/favorites', { preHandler: [app.authenticate] }, async (request, reply) => {
-  const { userId } = request.user as any;
-  const { movieId } = request.body as any;
-
-  try {
-    const favorite = await prisma.favorite.create({
-      data: { userId, movieId },
-    });
-    return { favorite };
-  } catch (error) {
-    return reply.status(400).send({ error: 'Already in favorites' });
-  }
-});
-
-app.delete('/api/favorites/:movieId', { preHandler: [app.authenticate] }, async (request) => {
-  const { userId } = request.user as any;
-  const { movieId } = request.params as any;
-
-  await prisma.favorite.deleteMany({
-    where: { userId, movieId },
-  });
-
-  return { success: true };
-});
-
 app.get('/api/favorites', { preHandler: [app.authenticate] }, async (request) => {
   const { userId } = request.user as any;
 
   const favorites = await prisma.favorite.findMany({
     where: { userId },
     include: {
-      movie: {
-        include: {
-          categories: { include: { category: true } },
-        },
-      },
+      movie: true,
+      food: true,
     },
     orderBy: { createdAt: 'desc' },
   });
 
   return { favorites };
+});
+
+app.post('/api/favorites', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+  const { type, movieId, foodId } = request.body as any;
+
+  if (type !== 'movie' && type !== 'food') {
+    return reply.status(400).send({ error: 'Type must be either "movie" or "food"' });
+  }
+
+  if (type === 'movie' && !movieId) {
+    return reply.status(400).send({ error: 'movieId is required for movie favorites' });
+  }
+
+  if (type === 'food' && !foodId) {
+    return reply.status(400).send({ error: 'foodId is required for food favorites' });
+  }
+
+  const favorite = await prisma.favorite.create({
+    data: {
+      userId,
+      type,
+      movieId: type === 'movie' ? movieId : null,
+      foodId: type === 'food' ? foodId : null,
+    },
+    include: {
+      movie: true,
+      food: true,
+    },
+  });
+
+  return { favorite };
+});
+
+app.delete('/api/favorites/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+  const { id } = request.params as any;
+
+  const favorite = await prisma.favorite.findUnique({ where: { id } });
+
+  if (!favorite || favorite.userId !== userId) {
+    return reply.status(404).send({ error: 'Favorite not found' });
+  }
+
+  await prisma.favorite.delete({ where: { id } });
+
+  return { success: true };
 });
 
 // ===== WATCH HISTORY ROUTES =====
@@ -348,46 +367,97 @@ app.get('/api/watch-history', { preHandler: [app.authenticate] }, async (request
 });
 
 // ===== RATINGS & COMMENTS =====
+// ===== RATINGS & COMMENTS =====
 app.post('/api/ratings', { preHandler: [app.authenticate] }, async (request, reply) => {
   const { userId } = request.user as any;
-  const { movieId, rating } = request.body as any;
+  const { type, movieId, foodId, rating } = request.body as any;
 
-  if (rating < 1 || rating > 5) {
-    return reply.status(400).send({ error: 'Rating must be between 1 and 5' });
+  if (!type || !rating || rating < 1 || rating > 10) {
+    return reply.status(400).send({ error: 'Valid type and rating (1-10) required' });
   }
 
-  const userRating = await prisma.rating.upsert({
-    where: {
-      userId_movieId: { userId, movieId },
+  const newRating = await prisma.rating.create({
+    data: {
+      userId,
+      type,
+      movieId: type === 'movie' ? movieId : null,
+      foodId: type === 'food' ? foodId : null,
+      rating,
     },
-    update: { rating },
-    create: { userId, movieId, rating },
   });
 
-  // Update movie average rating
-  const ratings = await prisma.rating.findMany({ where: { movieId } });
-  const average = ratings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / ratings.length;
-  
-  await prisma.movie.update({
-    where: { id: movieId },
-    data: { averageRating: average, ratingCount: ratings.length },
-  });
+  // Update average rating
+  if (type === 'movie' && movieId) {
+    const ratings = await prisma.rating.findMany({ where: { movieId, type: 'movie' } });
+    const avg = ratings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / ratings.length;
+    await prisma.movie.update({
+      where: { id: movieId },
+      data: { averageRating: avg, ratingCount: ratings.length },
+    });
+  } else if (type === 'food' && foodId) {
+    const ratings = await prisma.rating.findMany({ where: { foodId, type: 'food' } });
+    const avg = ratings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / ratings.length;
+    await prisma.food.update({
+      where: { id: foodId },
+      data: { averageRating: avg, ratingCount: ratings.length },
+    });
+  }
 
-  return { rating: userRating };
+  return { rating: newRating };
 });
 
-app.post('/api/comments', { preHandler: [app.authenticate] }, async (request) => {
+app.get('/api/ratings', async (request) => {
+  const { type, movieId, foodId } = request.query as any;
+
+  const where: any = { type };
+  if (movieId) where.movieId = movieId;
+  if (foodId) where.foodId = foodId;
+
+  const ratings = await prisma.rating.findMany({
+    where,
+    include: { user: { select: { id: true, name: true, avatar: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return { ratings };
+});
+
+app.post('/api/comments', { preHandler: [app.authenticate] }, async (request, reply) => {
   const { userId } = request.user as any;
-  const { movieId, content } = request.body as any;
+  const { type, movieId, foodId, content } = request.body as any;
+
+  if (!type || !content) {
+    return reply.status(400).send({ error: 'Type and content required' });
+  }
 
   const comment = await prisma.comment.create({
-    data: { userId, movieId, content },
-    include: {
-      user: { select: { name: true, avatar: true } },
+    data: {
+      userId,
+      type,
+      movieId: type === 'movie' ? movieId : null,
+      foodId: type === 'food' ? foodId : null,
+      content,
     },
+    include: { user: { select: { id: true, name: true, avatar: true } } },
   });
 
   return { comment };
+});
+
+app.get('/api/comments', async (request) => {
+  const { type, movieId, foodId } = request.query as any;
+
+  const where: any = { type };
+  if (movieId) where.movieId = movieId;
+  if (foodId) where.foodId = foodId;
+
+  const comments = await prisma.comment.findMany({
+    where,
+    include: { user: { select: { id: true, name: true, avatar: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return { comments };
 });
 
 // ===== ADMIN ROUTES =====
@@ -587,6 +657,167 @@ app.delete('/api/admin/foods/:id', { preHandler: [app.authenticate] }, async (re
   const { id } = request.params as any;
   
   await prisma.food.delete({ where: { id } });
+
+  return { success: true };
+});
+
+// ===== ORDERS ROUTES =====
+app.post('/api/orders', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+  const { items, total, deliveryAddress, phone, notes } = request.body as any;
+
+  if (!items || !Array.isArray(items) || items.length === 0 || !total) {
+    return reply.status(400).send({ error: 'Items and total are required' });
+  }
+
+  const order = await prisma.order.create({
+    data: {
+      userId,
+      items,
+      total,
+      deliveryAddress,
+      phone,
+      notes,
+      status: 'PENDING',
+    },
+    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
+  });
+
+  return { order };
+});
+
+app.get('/api/orders', { preHandler: [app.authenticate] }, async (request) => {
+  const { userId, role } = request.user as any;
+
+  const where = role === 'ADMIN' ? {} : { userId };
+
+  const orders = await prisma.order.findMany({
+    where,
+    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return { orders };
+});
+
+app.put('/api/admin/orders/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const { id } = request.params as any;
+  const { status } = request.body as any;
+
+  const order = await prisma.order.update({
+    where: { id },
+    data: { status },
+    include: { user: { select: { id: true, name: true, email: true, phone: true } } },
+  });
+
+  return { order };
+});
+
+// ===== ADMIN STATS =====
+app.get('/api/admin/stats', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const [users, movies, foods, orders, revenue] = await Promise.all([
+    prisma.user.count(),
+    prisma.movie.count(),
+    prisma.food.count(),
+    prisma.order.count(),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      where: { status: 'DELIVERED' },
+    }),
+  ]);
+
+  return {
+    stats: {
+      users,
+      movies,
+      foods,
+      orders,
+      revenue: revenue._sum.total || 0,
+    },
+  };
+});
+
+// ===== USERS MANAGEMENT =====
+app.get('/api/admin/users', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      avatar: true,
+      role: true,
+      subscription: true,
+      isActive: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return { users };
+});
+
+app.put('/api/admin/users/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const { id } = request.params as any;
+  const { role: newRole, subscription, isActive } = request.body as any;
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      ...(newRole && { role: newRole }),
+      ...(subscription && { subscription }),
+      ...(isActive !== undefined && { isActive }),
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      avatar: true,
+      role: true,
+      subscription: true,
+      isActive: true,
+      createdAt: true,
+    },
+  });
+
+  return { user };
+});
+
+app.delete('/api/admin/users/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { role } = request.user as any;
+  
+  if (role !== 'ADMIN') {
+    return reply.status(403).send({ error: 'Admin access required' });
+  }
+
+  const { id } = request.params as any;
+  
+  await prisma.user.delete({ where: { id } });
 
   return { success: true };
 });

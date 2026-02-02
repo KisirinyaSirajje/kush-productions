@@ -6,6 +6,8 @@ import { ArrowLeft, Star, Calendar, Clock, Heart, Play, Share2, Film } from "luc
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
+import RatingInput from "@/components/RatingInput";
+import CommentSection from "@/components/CommentSection";
 import { apiClient } from "@/lib/api/client";
 
 interface Movie {
@@ -238,6 +240,14 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Rating & Comments Section */}
+      <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto space-y-8">
+          <RatingInput type="movie" itemId={id} onRatingSubmitted={() => window.location.reload()} />
+          <CommentSection type="movie" itemId={id} />
         </div>
       </section>
 

@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Film, UtensilsCrossed, Heart, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { Film, UtensilsCrossed, Heart, Menu, X, LogOut, LayoutDashboard, ShoppingCart, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/authStore";
+import { useCartStore } from "@/lib/store/cartStore";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const getTotalItems = useCartStore((state) => state.getTotalItems);
+  const cartItemsCount = getTotalItems();
 
   const handleLogout = () => {
     logout();
@@ -64,6 +67,28 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             {isAuthenticated && user ? (
               <>
+                {/* Cart Icon with Badge */}
+                <Link
+                  href="/cart"
+                  className="relative flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {cartItemsCount > 0 && (
+                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                      {cartItemsCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Profile Link */}
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                  title="My Profile"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+
                 {user.role === 'ADMIN' && (
                   <Link
                     href="/admin"

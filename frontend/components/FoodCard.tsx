@@ -1,6 +1,11 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, ChefHat, UtensilsCrossed } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFavoritesStore } from "@/lib/store/favoritesStore";
+import { useAuthStore } from "@/lib/store/authStore";
 
 interface FoodCardProps {
   id: string | number;
@@ -15,6 +20,41 @@ interface FoodCardProps {
 }
 
 const FoodCard = ({ id, name, image, category, description, price, location, className, style }: FoodCardProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+  const { favorites, fetchFavorites, addFavorite, removeFavorite, isFavorited } = useFavoritesStore();
+  
+  const favorited = isFavorited('food', String(id));
+  const favorite = favorites.find((f) => f.type === 'food' && f.foodId === String(id));
+
+  useEffect(() => {
+    if (isAuthenticated && favorites.length === 0) {
+      fetchFavorites();
+    }
+  }, [isAuthenticated, favorites.length, fetchFavorites]);
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (favorited && favorite) {
+        await removeFavorite(favorite.id);
+      } else {
+        await addFavorite('food', String(id));
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Link href={`/foods/${id}`} className={cn("group block", className)} style={style}>
       <div className="relative overflow-hidden rounded-xl glass-card card-hover">
@@ -43,8 +83,15 @@ const FoodCard = ({ id, name, image, category, description, price, location, cla
         </div>
 
         {/* Favorite Button */}
-        <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground">
-          <Heart className="w-4 h-4" />
+        <button 
+          onClick={handleFavoriteClick}
+          disabled={isLoading}
+          className={cn(
+            "absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground",
+            isAuthenticated ? "opacity-0 group-hover:opacity-100" : "hidden"
+          )}
+        >
+          <Heart className={cn("w-4 h-4 transition-all", favorited && "fill-destructive text-destructive")} />
         </button>
 
         {/* Content */}
