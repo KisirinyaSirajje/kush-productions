@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Heart, Star, Film } from "lucide-react";
+import { Heart, Star, Film, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavoritesStore } from "@/lib/store/favoritesStore";
 import { useAuthStore } from "@/lib/store/authStore";
+import VideoPlayer from "./VideoPlayer";
 
 interface MovieCardProps {
   id: string | number;
   title: string;
   posterPath?: string;
+  videoUrl?: string;
   rating?: number;
   year?: number;
   duration?: string;
@@ -19,8 +21,9 @@ interface MovieCardProps {
   style?: React.CSSProperties;
 }
 
-const MovieCard = ({ id, title, posterPath, rating, year, className, style }: MovieCardProps) => {
+const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, className, style }: MovieCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
   const { isAuthenticated } = useAuthStore();
   const { favorites, fetchFavorites, addFavorite, removeFavorite, isFavorited } = useFavoritesStore();
   
@@ -56,8 +59,17 @@ const MovieCard = ({ id, title, posterPath, rating, year, className, style }: Mo
     }
   };
 
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (videoUrl) {
+      setIsPlayingVideo(true);
+    }
+  };
+
   return (
-    <Link href={`/movies/${id}`} className={cn("group block", className)} style={style}>
+    <>
+      <Link href={`/movies/${id}`} className={cn("group block", className)} style={style}>
       <div className="relative overflow-hidden rounded-xl glass-card card-hover">
         {/* Image Container */}
         <div className="aspect-[2/3] overflow-hidden bg-muted">
@@ -75,6 +87,18 @@ const MovieCard = ({ id, title, posterPath, rating, year, className, style }: Mo
           <div className={cn("w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5", posterPath && "hidden")}>
             <Film className="w-12 h-12 text-muted-foreground" />
           </div>
+
+          {/* Play Button Overlay */}
+          {videoUrl && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
+              <button
+                onClick={handlePlayClick}
+                className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center hover:bg-primary transition-all hover:scale-110"
+              >
+                <Play className="w-8 h-8 text-primary-foreground ml-1" fill="currentColor" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Rating Badge */}
@@ -104,6 +128,33 @@ const MovieCard = ({ id, title, posterPath, rating, year, className, style }: Mo
         </div>
       </div>
     </Link>
+
+    {/* Video Modal */}
+    {isPlayingVideo && videoUrl && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        {/* Blurred Backdrop */}
+        <div 
+          className="absolute inset-0 bg-black/80 backdrop-blur-md"
+          onClick={() => setIsPlayingVideo(false)}
+        />
+        
+        {/* Video Container */}
+        <div className="relative w-full max-w-6xl z-10">
+          <button
+            onClick={() => setIsPlayingVideo(false)}
+            className="absolute -top-12 right-0 text-white hover:text-primary transition-colors text-2xl font-bold"
+          >
+            ✕
+          </button>
+          <VideoPlayer
+            src={videoUrl}
+            movieId={String(id)}
+            title={title}
+          />
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

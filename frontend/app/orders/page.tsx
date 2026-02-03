@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Package, CheckCircle, Clock, XCircle, Truck } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,9 @@ import Footer from "@/components/Footer";
 import { useAuthStore } from "@/lib/store/authStore";
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 
 interface OrderItem {
   foodId: string;
@@ -40,7 +43,6 @@ const statusConfig: Record<string, { label: string; icon: any; color: string }> 
 
 export default function OrdersPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { isAuthenticated } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,13 +54,14 @@ export default function OrdersPage() {
       return;
     }
 
-    if (searchParams.get('success') === 'true') {
+    // Check for success parameter in URL
+    if (typeof window !== 'undefined' && window.location.search.includes('success=true')) {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 5000);
     }
 
     fetchOrders();
-  }, [isAuthenticated, router, searchParams]);
+  }, [isAuthenticated, router]);
 
   const fetchOrders = async () => {
     try {

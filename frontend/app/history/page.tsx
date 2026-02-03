@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Clock, Film } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
 import MovieCard from "@/components/MovieCard";
@@ -107,12 +108,12 @@ export default function WatchHistoryPage() {
           <p className="text-muted-foreground mb-6">
             Start watching movies to build your history
           </p>
-          <a
+          <Link
             href="/movies"
             className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
           >
             Browse Movies
-          </a>
+          </Link>
         </div>
       )}
 

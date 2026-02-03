@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Minus, Plus, X, ShoppingCart, ArrowRight } from "lucide-react";
@@ -8,7 +7,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useCartStore } from "@/lib/store/cartStore";
 import { useAuthStore } from "@/lib/store/authStore";
-import { cn } from "@/lib/utils";
 
 export default function CartPage() {
   const router = useRouter();

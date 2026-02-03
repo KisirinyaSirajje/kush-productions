@@ -5,7 +5,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
 import SectionHeader from "@/components/SectionHeader";
-import { Search, Filter, TrendingUp } from "lucide-react";
+import EnhancedSearch from "@/components/EnhancedSearch";
+import { Filter, TrendingUp } from "lucide-react";
 import apiClient from "@/lib/api/client";
 
 interface Movie {
@@ -62,15 +63,12 @@ export default function MoviesPage() {
           </div>
 
           {/* Search Bar */}
-          <div className="mt-8 flex gap-4 max-w-xl">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search movies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card border-border/50 h-12 w-full rounded-lg px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          <div className="mt-8 flex gap-4 max-w-2xl">
+            <div className="flex-1">
+              <EnhancedSearch 
+                placeholder="Search movies..." 
+                onSearch={setSearchQuery}
+                type="movies"
               />
             </div>
             <button className="h-12 w-12 border border-border/50 rounded-lg flex items-center justify-center hover:bg-muted transition-colors">

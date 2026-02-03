@@ -12,14 +12,16 @@ export const apiClient = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const authStorage = localStorage.getItem('auth-storage');
-    if (authStorage) {
+    // Only access localStorage in browser environment
+    if (typeof window !== 'undefined') {
       try {
-        const { state } = JSON.parse(authStorage);
-        const token = state?.token;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const { state } = JSON.parse(authStorage);
+          const token = state?.token;
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
         }
       } catch (error) {
         console.error('Failed to parse auth token:', error);

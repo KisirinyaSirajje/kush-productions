@@ -3,6 +3,8 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
@@ -23,8 +25,38 @@ const app = Fastify({ logger: true });
 
 // ===== PLUGINS =====
 app.register(cors, {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:3001'
+  ],
   credentials: true,
+});
+
+// Security headers
+app.register(helmet, {
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "https://i.ytimg.com"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'", "http://localhost:4000", "blob:"],
+      frameSrc: ["'self'", "https://www.youtube.com", "https://youtube.com"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+});
+
+// Rate limiting
+app.register(rateLimit, {
+  max: 100, // max requests
+  timeWindow: '15 minutes',
+  hook: 'preHandler',
+  allowList: ['127.0.0.1', 'localhost'],
 });
 
 app.register(jwt, {
@@ -33,13 +65,19 @@ app.register(jwt, {
 
 app.register(multipart, {
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 500 * 1024 * 1024, // 500MB limit for videos
+    files: 1,
   },
 });
 
 app.register(fastifyStatic, {
   root: join(__dirname, '..', 'public'),
   prefix: '/public/',
+  decorateReply: true,
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  },
 });
 
 // ===== AUTH MIDDLEWARE =====
@@ -54,8 +92,9 @@ app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply
 // ===== VALIDATION SCHEMAS =====
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(2).optional(),
+  password: z.string().min(8),
+  name: z.string().min(2),
+  phone: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -103,10 +142,48 @@ app.post('/api/upload', { preHandler: [app.authenticate] }, async (request, repl
   }
 });
 
+app.post('/api/upload/video', { preHandler: [app.authenticate] }, async (request, reply) => {
+  try {
+    const data = await request.file();
+    
+    if (!data) {
+      return reply.status(400).send({ error: 'No file uploaded' });
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    if (!allowedMimeTypes.includes(data.mimetype)) {
+      return reply.status(400).send({ error: 'Invalid file type. Only videos (MP4, MOV, AVI, WEBM) are allowed.' });
+    }
+
+    // Validate file size (500MB max)
+    const maxSize = 500 * 1024 * 1024; // 500MB
+    if (data.file.readableLength > maxSize) {
+      return reply.status(400).send({ error: 'File too large. Maximum size is 500MB.' });
+    }
+
+    // Generate unique filename
+    const ext = data.filename.split('.').pop();
+    const filename = `${randomBytes(16).toString('hex')}.${ext}`;
+    const filepath = join(__dirname, '..', 'public', 'videos', filename);
+
+    // Save file
+    await pipeline(data.file, createWriteStream(filepath));
+
+    // Return URL
+    const url = `http://localhost:${process.env.PORT || 4000}/public/videos/${filename}`;
+    return { url };
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    app.log.error(err);
+    return reply.status(500).send({ error: 'Video upload failed', details: err.message });
+  }
+});
+
 // ===== AUTH ROUTES =====
 app.post('/api/auth/register', async (request, reply) => {
   try {
-    const { email, password, name } = registerSchema.parse(request.body);
+    const { email, password, name, phone } = registerSchema.parse(request.body);
     
     // Check if user exists
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -119,8 +196,13 @@ app.post('/api/auth/register', async (request, reply) => {
     
     // Create user
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name },
-      select: { id: true, email: true, name: true, role: true, avatar: true },
+      data: { 
+        email, 
+        password: hashedPassword, 
+        name,
+        phone: phone || null,
+      },
+      select: { id: true, email: true, name: true, phone: true, role: true, avatar: true },
     });
 
     // Generate token
@@ -683,6 +765,15 @@ app.post('/api/orders', { preHandler: [app.authenticate] }, async (request, repl
     include: { user: { select: { id: true, name: true, email: true, phone: true } } },
   });
 
+  // Send notification to user
+  await createNotification(
+    userId,
+    'ORDER_UPDATE',
+    'Order Placed Successfully',
+    `Your order of UGX ${total.toLocaleString()} has been placed and is being processed.`,
+    `/orders/${order.id}`
+  );
+
   return { order };
 });
 
@@ -715,6 +806,23 @@ app.put('/api/admin/orders/:id', { preHandler: [app.authenticate] }, async (requ
     data: { status },
     include: { user: { select: { id: true, name: true, email: true, phone: true } } },
   });
+
+  // Send notification to user about status change
+  const statusMessages: Record<string, string> = {
+    PENDING: 'Your order is pending confirmation.',
+    PROCESSING: 'Your order is being prepared.',
+    SHIPPED: 'Your order has been shipped and is on the way!',
+    DELIVERED: 'Your order has been delivered. Enjoy!',
+    CANCELLED: 'Your order has been cancelled.',
+  };
+
+  await createNotification(
+    order.userId,
+    'ORDER_UPDATE',
+    `Order Status Updated: ${status}`,
+    statusMessages[status] || 'Your order status has been updated.',
+    `/orders/${order.id}`
+  );
 
   return { order };
 });
@@ -1215,5 +1323,86 @@ app.get('/api/admin/dashboard-analytics', { preHandler: [app.authenticate] }, as
     revenueData: monthsData,
   };
 });
+
+// ===== NOTIFICATION ROUTES =====
+app.get('/api/notifications', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+  const { unreadOnly } = request.query as any;
+
+  const where: any = { userId };
+  
+  if (unreadOnly === 'true') {
+    where.isRead = false;
+  }
+
+  const notifications = await prisma.notification.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+
+  const unreadCount = await prisma.notification.count({
+    where: { userId, isRead: false },
+  });
+
+  return { notifications, unreadCount };
+});
+
+app.put('/api/notifications/:id/read', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+  const { id } = request.params as any;
+
+  const notification = await prisma.notification.findUnique({ where: { id } });
+
+  if (!notification || notification.userId !== userId) {
+    return reply.status(404).send({ error: 'Notification not found' });
+  }
+
+  const updated = await prisma.notification.update({
+    where: { id },
+    data: { isRead: true },
+  });
+
+  return { notification: updated };
+});
+
+app.put('/api/notifications/read-all', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+
+  await prisma.notification.updateMany({
+    where: { userId, isRead: false },
+    data: { isRead: true },
+  });
+
+  return { success: true };
+});
+
+app.delete('/api/notifications/:id', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { userId } = request.user as any;
+  const { id } = request.params as any;
+
+  const notification = await prisma.notification.findUnique({ where: { id } });
+
+  if (!notification || notification.userId !== userId) {
+    return reply.status(404).send({ error: 'Notification not found' });
+  }
+
+  await prisma.notification.delete({ where: { id } });
+
+  return { success: true };
+});
+
+// Helper function to create notifications
+async function createNotification(userId: string, type: string, title: string, message: string, link?: string) {
+  await prisma.notification.create({
+    data: {
+      userId,
+      type: type as any,
+      title,
+      message,
+      link,
+    },
+  });
+}
 
 export default app;

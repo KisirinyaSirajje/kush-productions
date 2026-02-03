@@ -14,6 +14,7 @@ interface Movie {
   title: string;
   releaseYear: number;
   thumbnailUrl: string;
+  videoUrl?: string;
   duration: number;
   rating?: number;
 }
@@ -79,6 +80,7 @@ export default function Home() {
                 title={movie.title}
                 year={movie.releaseYear}
                 posterPath={movie.thumbnailUrl}
+                videoUrl={movie.videoUrl}
                 duration={`${Math.floor(movie.duration / 60)}m`}
                 rating={movie.rating || 8.0}
                 category="Movie"

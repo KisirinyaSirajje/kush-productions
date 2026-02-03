@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
@@ -105,12 +106,12 @@ export default function WatchlistPage() {
                       <p className="text-muted-foreground mb-6">
                         Start adding movies you love to watch them later
                       </p>
-                      <a
+                      <Link
                         href="/movies"
                         className="inline-block px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
                       >
                         Browse Movies
-                      </a>
+                      </Link>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -142,12 +143,12 @@ export default function WatchlistPage() {
                       <p className="text-muted-foreground mb-6">
                         Start adding delicious foods you want to order
                       </p>
-                      <a
+                      <Link
                         href="/foods"
                         className="inline-block px-6 py-3 rounded-lg bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-colors"
                       >
                         Browse Foods
-                      </a>
+                      </Link>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

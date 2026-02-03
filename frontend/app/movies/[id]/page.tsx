@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
 import RatingInput from "@/components/RatingInput";
 import CommentSection from "@/components/CommentSection";
+import VideoPlayer from "@/components/VideoPlayer";
 import { apiClient } from "@/lib/api/client";
 
 interface Movie {
@@ -32,6 +33,8 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
   const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWatching, setIsWatching] = useState(false);
+  const [watchProgress, setWatchProgress] = useState(0);
 
   useEffect(() => {
     const fetchMovie = async () => {
@@ -223,7 +226,10 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
               {/* Actions */}
               <div className="flex flex-wrap gap-3 sm:gap-4">
                 {movie.videoUrl && (
-                  <button className="bg-primary hover:bg-primary/90 btn-glow px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors text-sm sm:text-base flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsWatching(true)}
+                    className="bg-primary hover:bg-primary/90 btn-glow px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors text-sm sm:text-base flex items-center gap-2"
+                  >
                     <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                     <span className="hidden sm:inline">Watch Now</span>
                     <span className="sm:hidden">Watch</span>
@@ -242,6 +248,31 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </section>
+
+      {/* Video Player Modal */}
+      {isWatching && movie.videoUrl && (
+        <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+          <button
+            onClick={() => setIsWatching(false)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 text-2xl z-10"
+          >
+            ×
+          </button>
+          <div className="w-full max-w-6xl">
+            <VideoPlayer
+              src={movie.videoUrl}
+              movieId={movie.id}
+              title={movie.title}
+              initialProgress={watchProgress}
+              onProgress={(progress) => {
+                setWatchProgress(progress);
+                // Here you can also save to backend
+                // apiClient.post(`/api/watch-history/${movie.id}`, { progress });
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Rating & Comments Section */}
       <section className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">

@@ -19,7 +19,7 @@ interface FoodCardProps {
   style?: React.CSSProperties;
 }
 
-const FoodCard = ({ id, name, image, category, description, price, location, className, style }: FoodCardProps) => {
+const FoodCard = ({ id, name, image, category, description, price, className, style }: FoodCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useAuthStore();
   const { favorites, fetchFavorites, addFavorite, removeFavorite, isFavorited } = useFavoritesStore();

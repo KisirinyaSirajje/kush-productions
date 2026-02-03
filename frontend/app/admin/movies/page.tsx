@@ -68,6 +68,7 @@ export default function AdminMoviesPage() {
       duration: movie.duration.toString(),
       posterPath: movie.thumbnailUrl || movie.posterPath || "",
       description: movie.description || "",
+      videoUrl: movie.videoUrl || "",
     });
     setIsModalOpen(true);
   };
@@ -92,7 +93,7 @@ export default function AdminMoviesPage() {
           title: data.title,
           description: data.description,
           thumbnailUrl: data.posterPath,
-          videoUrl: `https://example.com/videos/${data.title.toLowerCase().replace(/\s+/g, '-')}.mp4`,
+          videoUrl: data.videoUrl || '',
           duration: parseInt(data.duration),
           releaseYear: parseInt(data.year),
         });
@@ -103,7 +104,7 @@ export default function AdminMoviesPage() {
           title: data.title,
           description: data.description,
           thumbnailUrl: data.posterPath,
-          videoUrl: `https://example.com/videos/${data.title.toLowerCase().replace(/\s+/g, '-')}.mp4`,
+          videoUrl: data.videoUrl || '',
           duration: parseInt(data.duration),
           releaseYear: parseInt(data.year),
         });

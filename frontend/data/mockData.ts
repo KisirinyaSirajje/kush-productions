@@ -7,6 +7,7 @@ export interface Movie {
   category: string;
   duration: string;
   description?: string;
+  videoUrl?: string;
 }
 
 export interface Food {

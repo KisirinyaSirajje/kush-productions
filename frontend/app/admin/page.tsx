@@ -12,10 +12,9 @@ import {
   Play,
   Heart
 } from "lucide-react";
-import { trendingMovies } from "@/data/mockData";
 import { useAuthStore } from "@/lib/store/authStore";
 import { apiClient } from "@/lib/api/client";
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Activity = {
   type: string;

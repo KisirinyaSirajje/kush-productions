@@ -13,6 +13,7 @@ export interface MovieFormData {
   duration: string;
   description: string;
   posterPath: string;
+  videoUrl?: string;
 }
 
 interface MovieFormProps {
@@ -30,6 +31,7 @@ export default function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps)
     duration: "120 min",
     description: "",
     posterPath: "",
+    videoUrl: "",
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export default function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps)
         duration: movie.duration || "120 min",
         description: movie.description || "",
         posterPath: movie.posterPath || "",
+        videoUrl: movie.videoUrl || "",
       });
       if (movie.posterPath) {
         setImagePreview(movie.posterPath);
@@ -256,6 +259,24 @@ export default function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps)
               )}
             </div>
           )}
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            YouTube Video URL *
+          </label>
+          <input
+            type="url"
+            name="videoUrl"
+            value={formData.videoUrl}
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter a YouTube video URL from your channel
+          </p>
         </div>
       </div>
 

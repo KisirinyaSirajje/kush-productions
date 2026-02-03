@@ -7,6 +7,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/authStore";
 import { useCartStore } from "@/lib/store/cartStore";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,6 +69,9 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             {isAuthenticated && user ? (
               <>
+                {/* Notification Bell */}
+                <NotificationBell />
+
                 {/* Cart Icon with Badge */}
                 <Link
                   href="/cart"

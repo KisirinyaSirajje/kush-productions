@@ -24,16 +24,37 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const getPasswordStrength = (pwd: string) => {
+    if (pwd.length === 0) return { strength: 0, text: "", color: "" };
+    if (pwd.length < 6) return { strength: 1, text: "Weak", color: "text-red-500" };
+    if (pwd.length < 10 && !/[A-Z]/.test(pwd)) return { strength: 2, text: "Fair", color: "text-yellow-500" };
+    if (pwd.length >= 10 || /[A-Z]/.test(pwd)) return { strength: 3, text: "Strong", color: "text-green-500" };
+    return { strength: 2, text: "Fair", color: "text-yellow-500" };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
     
-    if (!isLogin && password !== confirmPassword) {
-      setError("Passwords do not match!");
-      setIsLoading(false);
-      return;
+    // Validation for sign up
+    if (!isLogin) {
+      if (!fullName.trim()) {
+        setError("Please enter your full name");
+        return;
+      }
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters long");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
     }
+    
+    setIsLoading(true);
     
     if (isLogin) {
       // Login
@@ -56,6 +77,7 @@ export default function LoginPage() {
         const response = await apiClient.post('/api/auth/register', {
           name: fullName,
           email: email,
+          phone: phone,
           password: password,
         });
 
@@ -118,13 +140,6 @@ export default function LoginPage() {
                 ? "Sign in to access your watchlist and favorites" 
                 : "Join Kush Films and start building your collection"}
             </p>
-            {isLogin && (
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm">
-                <p className="text-muted-foreground mb-2">Demo Credentials:</p>
-                <p className="text-foreground"><strong>Admin:</strong> admin@kushfilms.com / admin123</p>
-                <p className="text-foreground"><strong>User:</strong> user@kushfilms.com / user123</p>
-              </div>
-            )}
           </div>
 
           {/* Error Message */}
@@ -212,7 +227,28 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {!isLogin && (
+              {!isLogin && password.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${
+                          passwordStrength.strength === 1 ? "w-1/3 bg-red-500" :
+                          passwordStrength.strength === 2 ? "w-2/3 bg-yellow-500" :
+                          passwordStrength.strength === 3 ? "w-full bg-green-500" : "w-0"
+                        }`}
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${passwordStrength.color}`}>
+                      {passwordStrength.text}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use 8+ characters with a mix of letters, numbers & symbols
+                  </p>
+                </div>
+              )}
+              {!isLogin && password.length === 0 && (
                 <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
               )}
             </div>
