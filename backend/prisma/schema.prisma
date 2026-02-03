@@ -9,17 +9,20 @@ datasource db {
 
 // ===== USERS & AUTH =====
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String?
-  phone         String?
-  avatar        String?
-  role          Role      @default(USER)
-  subscription  Subscription @default(FREE)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  password              String
+  name                  String?
+  phone                 String?
+  avatar                String?
+  role                  Role      @default(USER)
+  subscription          Subscription @default(FREE)
+  isActive              Boolean   @default(true)
+  emailVerified         Boolean   @default(false)
+  emailVerificationToken String?  @unique
+  emailVerificationExpiry DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   // Relations
   watchHistory  WatchHistory[]
@@ -30,6 +33,7 @@ model User {
   notifications Notification[]
   
   @@index([email])
+  @@index([emailVerificationToken])
   @@map("users")
 }
 
