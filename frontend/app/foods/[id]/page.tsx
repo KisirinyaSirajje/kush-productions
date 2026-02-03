@@ -25,8 +25,8 @@ interface Food {
   ingredients?: string[];
 }
 
-export default function FoodDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function FoodDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [food, setFood] = useState<Food | null>(null);
   const [relatedFoods, setRelatedFoods] = useState<Food[]>([]);
   const [isLoading, setIsLoading] = useState(true);

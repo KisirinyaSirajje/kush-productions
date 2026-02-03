@@ -27,8 +27,8 @@ interface Movie {
   country?: string;
 }
 
-export default function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function MovieDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [movie, setMovie] = useState<Movie | null>(null);
   const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
