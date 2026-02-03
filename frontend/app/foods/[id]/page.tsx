@@ -44,16 +44,15 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
     const fetchFood = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.get('/api/foods');
-        const foods = response.data.foods || [];
+        // Fetch the specific food item
+        const foodResponse = await apiClient.get(`/api/foods/${id}`);
+        setFood(foodResponse.data.food || null);
         
-        const foundFood = foods.find((f: Food) => f.id === id);
-        setFood(foundFood || null);
-        
-        if (foundFood) {
-          const related = foods.filter((f: Food) => f.id !== id).slice(0, 3);
-          setRelatedFoods(related);
-        }
+        // Fetch all foods for related section
+        const allFoodsResponse = await apiClient.get('/api/foods');
+        const foods = allFoodsResponse.data.foods || [];
+        const related = foods.filter((f: Food) => f.id !== id).slice(0, 3);
+        setRelatedFoods(related);
       } catch (err: unknown) {
         const error = err as { message?: string };
         setError(error.message || 'Failed to load food');

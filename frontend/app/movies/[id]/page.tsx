@@ -40,16 +40,15 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
     const fetchMovie = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.get('/api/movies');
-        const movies = response.data.movies || [];
+        // Fetch the specific movie
+        const movieResponse = await apiClient.get(`/api/movies/${id}`);
+        setMovie(movieResponse.data.movie || null);
         
-        const foundMovie = movies.find((m: Movie) => m.id === id);
-        setMovie(foundMovie || null);
-        
-        if (foundMovie) {
-          const related = movies.filter((m: Movie) => m.id !== id).slice(0, 4);
-          setRelatedMovies(related);
-        }
+        // Fetch all movies for related section
+        const allMoviesResponse = await apiClient.get('/api/movies');
+        const movies = allMoviesResponse.data.movies || [];
+        const related = movies.filter((m: Movie) => m.id !== id).slice(0, 4);
+        setRelatedMovies(related);
       } catch (err: unknown) {
         const error = err as { message?: string };
         setError(error.message || 'Failed to load movie');
