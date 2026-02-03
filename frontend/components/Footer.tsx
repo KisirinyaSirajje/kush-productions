@@ -84,10 +84,12 @@ const Footer = () => {
 
         <div className="border-t border-border/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 Kush Films. Proudly Ugandan 🇺🇬
+            © 2026 Kush Films. Proudly Ugandan 🇺🇬
           </p>
           <div className="flex items-center gap-4">
             <span className="text-xs text-muted-foreground">Movies powered by TMDB</span>
+            <span className="text-xs text-muted-foreground">•</span>
+            <span className="text-xs text-muted-foreground">Created by Raj Technologies</span>
           </div>
         </div>
       </div>
