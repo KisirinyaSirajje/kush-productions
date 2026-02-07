@@ -50,8 +50,12 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="p-6 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-xl font-bold text-primary-foreground">K</span>
+            <div className="w-10 h-10 rounded-lg overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="Kush Films Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h1 className="text-lg font-serif font-bold text-foreground">Kush Films</h1>

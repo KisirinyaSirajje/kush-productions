@@ -9,7 +9,12 @@ export const metadata: Metadata = {
   title: "Kush Films - Uganda's Premier Movie & Food Platform",
   description: "Discover amazing films and explore authentic Ugandan cuisine. Experience the best of cinema and local delicacies from the Pearl of Africa.",
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/logo.png' },
+      { url: '/logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/logo.png', sizes: '16x16', type: 'image/png' },
+    ],
+    shortcut: '/logo.png',
     apple: '/logo.png',
   },
 };
