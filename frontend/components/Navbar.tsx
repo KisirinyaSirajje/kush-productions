@@ -137,13 +137,41 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-foreground"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile Icons - Cart, Notifications, Profile */}
+          <div className="flex md:hidden items-center gap-3">
+            {isAuthenticated && user && (
+              <>
+                {/* Notification Bell */}
+                <NotificationBell />
+
+                {/* Cart Icon with Badge */}
+                <Link
+                  href="/cart"
+                  className="relative"
+                >
+                  <ShoppingCart className="w-5 h-5 text-foreground" />
+                  {cartItemsCount > 0 && (
+                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                      {cartItemsCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Profile Icon */}
+                <Link href="/profile">
+                  <User className="w-5 h-5 text-foreground" />
+                </Link>
+              </>
+            )}
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-foreground"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -158,31 +186,98 @@ const Navbar = () => {
                     href={item.href}
                     onClick={() => setIsMenuOpen(false)}
                     className={cn(
-                      "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary py-2",
+                      "flex items-center gap-3 text-sm font-medium transition-colors hover:text-primary py-2",
                       pathname === item.href ? "text-primary" : "text-muted-foreground"
                     )}
                   >
-                    {Icon && <Icon className="w-4 h-4" />}
+                    {Icon && <Icon className="w-5 h-5" />}
                     {item.label}
                   </Link>
                 );
               })}
-              <div className="flex flex-col gap-2 pt-4 border-t border-border/30">
-                <Link
-                  href="/login"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-sm font-medium text-center py-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium text-center hover:bg-primary/90 transition-colors"
-                >
-                  Get Started
-                </Link>
-              </div>
+
+              {isAuthenticated && user ? (
+                <>
+                  <div className="flex flex-col gap-2 pt-4 border-t border-border/30">
+                    {/* Cart Link with Badge */}
+                    <Link
+                      href="/cart"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center justify-between text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ShoppingCart className="w-5 h-5" />
+                        <span>Cart</span>
+                      </div>
+                      {cartItemsCount > 0 && (
+                        <span className="w-6 h-6 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                          {cartItemsCount}
+                        </span>
+                      )}
+                    </Link>
+
+                    {/* Profile Link */}
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
+                    >
+                      <User className="w-5 h-5" />
+                      Profile
+                    </Link>
+
+                    {user.role === 'ADMIN' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
+                      >
+                        <LayoutDashboard className="w-5 h-5" />
+                        Dashboard
+                      </Link>
+                    )}
+
+                    {/* User Info */}
+                    <div className="flex items-center gap-3 px-3 py-2 bg-muted rounded-lg mt-2">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary-foreground">
+                          {user.name.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{user.name}</span>
+                    </div>
+
+                    {/* Logout Button */}
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center gap-3 text-sm font-medium text-red-500 hover:text-red-600 transition-colors py-2"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2 pt-4 border-t border-border/30">
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-sm font-medium text-center py-2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium text-center hover:bg-primary/90 transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
