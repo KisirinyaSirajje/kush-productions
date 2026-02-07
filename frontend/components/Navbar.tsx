@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/authStore";
 import { useCartStore } from "@/lib/store/cartStore";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -36,8 +37,12 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-110">
-              <span className="text-xl font-bold text-primary-foreground">K</span>
+            <div className="w-10 h-10 rounded-lg overflow-hidden transition-transform group-hover:scale-110">
+              <img 
+                src="/logo.png" 
+                alt="Kush Films Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h1 className="text-lg font-serif font-bold text-foreground">Kush Films</h1>
@@ -69,6 +74,9 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             {isAuthenticated && user ? (
               <>
+                {/* Theme Toggle */}
+                <ThemeToggle />
+
                 {/* Notification Bell */}
                 <NotificationBell />
 
@@ -121,6 +129,9 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                {/* Theme Toggle for non-authenticated users */}
+                <ThemeToggle />
+                
                 <Link
                   href="/login"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -137,7 +148,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Icons - Cart, Notifications, Profile */}
+          {/* Mobile Icons - Cart, Notifications, Profile, Theme */}
           <div className="flex md:hidden items-center gap-3">
             {isAuthenticated && user && (
               <>
@@ -163,6 +174,9 @@ const Navbar = () => {
                 </Link>
               </>
             )}
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Mobile Menu Button */}
             <button
