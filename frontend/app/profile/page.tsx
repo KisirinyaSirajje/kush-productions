@@ -218,6 +218,7 @@ export default function ProfilePage() {
                           id={fav.movie.id}
                           title={fav.movie.title}
                           posterPath={fav.movie.thumbnailUrl}
+                          videoUrl={fav.movie.videoUrl}
                           rating={fav.movie.rating}
                           year={fav.movie.releaseYear}
                         />

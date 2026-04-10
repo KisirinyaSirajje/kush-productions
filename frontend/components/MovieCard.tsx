@@ -21,7 +21,7 @@ interface MovieCardProps {
   style?: React.CSSProperties;
 }
 
-const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, className, style }: MovieCardProps) => {
+const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, duration, className, style }: MovieCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
   const { isAuthenticated } = useAuthStore();
@@ -29,6 +29,7 @@ const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, className, s
   
   const favorited = isFavorited('movie', String(id));
   const favorite = favorites.find((f) => f.type === 'movie' && f.movieId === String(id));
+  const detailsHref = `/movies/${id}`;
 
   useEffect(() => {
     if (isAuthenticated && favorites.length === 0) {
@@ -59,25 +60,29 @@ const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, className, s
     }
   };
 
-  const handlePlayClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const openVideoModal = () => {
     if (videoUrl) {
       setIsPlayingVideo(true);
     }
   };
 
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openVideoModal();
+  };
+
   return (
     <>
-      <Link href={`/movies/${id}`} className={cn("group block", className)} style={style}>
-      <div className="relative overflow-hidden rounded-xl glass-card card-hover">
+      <article className={cn("group block", className)} style={style}>
+      <div className="relative overflow-hidden rounded-2xl glass-card card-hover shadow-sm hover:shadow-xl hover:shadow-primary/15">
         {/* Image Container */}
-        <div className="aspect-[2/3] overflow-hidden bg-muted">
+        <div className="aspect-[2/3] overflow-hidden bg-muted/40">
           {posterPath ? (
             <img
               src={posterPath}
               alt={title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
@@ -90,29 +95,28 @@ const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, className, s
 
           {/* Play Button Overlay */}
           {videoUrl && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-background/20 backdrop-blur-[2px]">
               <button
                 onClick={handlePlayClick}
-                className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center hover:bg-primary transition-all hover:scale-110"
+                className="pointer-events-auto w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center transition-all md:hover:scale-110"
               >
                 <Play className="w-8 h-8 text-primary-foreground ml-1" fill="currentColor" />
               </button>
             </div>
           )}
         </div>
-
         {/* Rating Badge */}
-        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/80 backdrop-blur-sm">
+        <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-background/90 border border-border/70 backdrop-blur-sm shadow-sm">
           <Star className="w-3 h-3 text-accent fill-accent" />
-          <span className="text-xs font-semibold text-white">{rating}</span>
+          <span className="text-xs font-semibold text-foreground">{rating}</span>
         </div>
 
         {/* Favorite Button */}
-        <button 
+        <button
           onClick={handleFavoriteClick}
           disabled={isLoading}
           className={cn(
-            "absolute top-2 right-2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground",
+            "absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 border border-border/70 backdrop-blur-sm flex items-center justify-center transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground",
             isAuthenticated ? "opacity-0 group-hover:opacity-100" : "hidden"
           )}
         >
@@ -120,14 +124,22 @@ const MovieCard = ({ id, title, posterPath, videoUrl, rating, year, className, s
         </button>
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
-          <h3 className="font-semibold text-white text-sm group-hover:text-primary transition-colors line-clamp-1">
-            {title}
-          </h3>
-          <p className="text-xs text-white/70 mt-1">{year}</p>
+        <div className="p-4 bg-card/70">
+          <Link href={detailsHref} className="group/details block rounded-md -m-1 p-1">
+            <h3 className="font-semibold text-foreground text-sm group-hover:text-primary transition-colors line-clamp-2 min-h-10">
+              {title}
+            </h3>
+            <span className="mt-1 inline-block text-xs font-medium text-primary opacity-0 translate-y-1 transition-all duration-200 group-hover/details:opacity-100 group-hover/details:translate-y-0">
+              Read more
+            </span>
+            <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+              <span>{year}</span>
+              {duration && <span>{duration}</span>}
+            </div>
+          </Link>
         </div>
       </div>
-    </Link>
+    </article>
 
     {/* Video Modal */}
     {isPlayingVideo && videoUrl && (

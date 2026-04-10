@@ -25,7 +25,7 @@ const Navbar = () => {
 
   const navItems = [
     { href: "/", label: "Home" },
-    { href: "/movies", label: "Films", icon: Film },
+    { href: "/videos", label: "Videos", icon: Film },
     { href: "/foods", label: "Foods", icon: UtensilsCrossed },
     { href: "/watchlist", label: "Watchlist", icon: Heart },
     { href: "/history", label: "History", icon: Clock },

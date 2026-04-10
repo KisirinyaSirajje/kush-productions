@@ -64,7 +64,7 @@ const FoodCard = ({ id, name, image, category, description, price, className, st
             <img
               src={image}
               alt={name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.nextElementSibling?.classList.remove('hidden');

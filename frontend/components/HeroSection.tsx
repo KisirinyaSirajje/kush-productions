@@ -3,15 +3,15 @@ import { Film, UtensilsCrossed } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[88svh] md:min-h-[90vh] flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 hero-gradient" />
       
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute top-16 left-6 md:top-20 md:left-10 w-44 h-44 md:w-72 md:h-72 bg-primary/20 rounded-full blur-3xl motion-safe:md:animate-float" />
+        <div className="absolute bottom-16 right-6 md:bottom-20 md:right-10 w-56 h-56 md:w-96 md:h-96 bg-accent/10 rounded-full blur-3xl motion-safe:md:animate-float" style={{ animationDelay: '-3s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] md:w-[600px] md:h-[600px] bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       {/* Grid Pattern Overlay */}
@@ -28,25 +28,25 @@ const HeroSection = () => {
       <div className="relative z-10 container mx-auto px-4 text-center">
         <div className="max-w-4xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 mb-8 motion-safe:animate-fade-in">
             <span className="text-2xl">🇺🇬</span>
             <span className="text-sm font-medium text-white/80">Proudly Ugandan</span>
           </div>
 
           {/* Main Title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-6 animate-fade-in-up">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-6 motion-safe:animate-fade-in-up">
             <span className="text-foreground">Kush</span>
             <span className="text-gradient-gold"> Films</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 motion-safe:animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             Experience the best of cinema and local Ugandan cuisine. 
             Discover trending movies and explore authentic flavors from the Pearl of Africa.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 motion-safe:animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <Link href="/movies">
               <button className="bg-primary hover:bg-primary/90 text-primary-foreground btn-glow group px-8 py-3 rounded-lg font-semibold transition-all">
                 <Film className="w-5 h-5 mr-2 inline-block group-hover:animate-pulse" />
@@ -62,7 +62,7 @@ const HeroSection = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto mt-16 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto mt-14 sm:mt-16 motion-safe:animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
             <div className="text-center">
               <p className="text-3xl md:text-4xl font-bold text-gradient">500+</p>
               <p className="text-xs text-muted-foreground mt-1">Movies</p>

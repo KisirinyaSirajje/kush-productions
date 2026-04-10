@@ -162,7 +162,7 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="glass-card p-6 rounded-xl sticky top-24">
+            <div className="glass-card p-6 rounded-xl lg:sticky lg:top-24">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               
               {/* Items */}

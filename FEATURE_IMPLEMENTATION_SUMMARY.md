@@ -258,6 +258,99 @@ The application now has:
 - Better discoverability through enhanced search
 
 Total lines of code added: **~1,000 lines**
+
+---
+
+## 📌 April 10, 2026 - UX, Content, and Responsiveness Update
+
+### 1. 🎥 YouTube Channel Content Integration
+**Status**: Implemented ✅
+
+What was added:
+- Seeded movie/video entries using links from the official KUSH FILMS UGANDA YouTube channel.
+- Added YouTube thumbnail usage for card posters.
+- Updated seed flow to avoid duplicate creation by reusing existing records when possible.
+
+Files:
+- `backend/prisma/seed.ts`
+
+---
+
+### 2. 📺 Dedicated Videos Page
+**Status**: Implemented ✅
+
+What was added:
+- New `/videos` page that lists playable video cards from API content.
+- Navbar updated to include `Videos` route.
+
+Files:
+- `frontend/app/videos/page.tsx`
+- `frontend/components/Navbar.tsx`
+
+---
+
+### 3. 🧩 Movie Card Interaction Rework
+**Status**: Implemented ✅
+
+Behavior now:
+- Video opens **only** when the play button is clicked.
+- Clicking title/text routes to movie details page.
+- Removed "View details" CTA button.
+- Prevented overlay from intercepting clicks across the full card.
+- Refined card visual style to remove heavy black overlays.
+
+Files:
+- `frontend/components/MovieCard.tsx`
+- `frontend/app/movies/page.tsx`
+- `frontend/app/watchlist/page.tsx`
+- `frontend/app/profile/page.tsx`
+
+---
+
+### 4. 📱 Mobile Responsiveness and Layout Stability
+**Status**: Implemented ✅
+
+What was improved:
+- Global horizontal overflow protection to reduce small-screen jitter.
+- Stable scrollbar behavior and hover scaling tuned for touch devices.
+- Hero section animation/size reductions on mobile to prevent visual shake.
+- Sticky side summaries disabled on small screens in cart/checkout.
+
+Files:
+- `frontend/app/globals.css`
+- `frontend/components/HeroSection.tsx`
+- `frontend/components/FoodCard.tsx`
+- `frontend/app/cart/page.tsx`
+- `frontend/app/checkout/page.tsx`
+
+---
+
+### 5. ↔ Home Screen Horizontal Scrolling with Controls
+**Status**: Implemented ✅
+
+What was added:
+- Reusable horizontal row component with left/right scroll buttons.
+- Applied to Home "Trending Films" and "Kush Foods" sections.
+
+Files:
+- `frontend/components/HorizontalScrollRow.tsx`
+- `frontend/app/page.tsx`
+- `frontend/app/globals.css`
+
+---
+
+### 6. 🛠 TypeScript and Next.js Config Fixes
+**Status**: Implemented ✅
+
+What was fixed:
+- Backend TypeScript `moduleResolution` deprecation fixed.
+- Frontend CSS side-effect import typing fixed.
+- Next config updated for modern image remote patterns and turbopack root stability.
+
+Files:
+- `backend/tsconfig.json`
+- `frontend/global.d.ts`
+- `frontend/next.config.ts`
 Total API endpoints added: **4 endpoints**
 Total new components: **3 components**
 

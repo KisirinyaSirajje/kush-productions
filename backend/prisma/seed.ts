@@ -43,55 +43,64 @@ async function main() {
   console.log('✅ Categories created:', categories.length);
 
   // Create sample movies
-  const actionCategory = await prisma.category.findUnique({ where: { slug: 'action' } });
-  const comedyCategory = await prisma.category.findUnique({ where: { slug: 'comedy' } });
   const ugandanCategory = await prisma.category.findUnique({ where: { slug: 'ugandan-films' } });
 
-  const sampleMovies = [
-    {
-      title: 'The Quest for Kampala',
-      description: 'An epic action adventure set in modern-day Kampala, following a hero on a mission to save the city.',
-      thumbnailUrl: 'https://via.placeholder.com/300x450/FF6B6B/FFFFFF?text=Quest+for+Kampala',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      duration: 596,
-      releaseYear: 2024,
-      director: 'John Ssempa',
-      cast: ['Actor One', 'Actor Two'],
-      language: 'English',
-      isFeatured: true,
-      categoryId: actionCategory?.id,
-    },
-    {
-      title: 'Laughter in Entebbe',
-      description: 'A hilarious comedy about a group of friends navigating life in Entebbe with humor and heart.',
-      thumbnailUrl: 'https://via.placeholder.com/300x450/4ECDC4/FFFFFF?text=Laughter+Entebbe',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      duration: 654,
-      releaseYear: 2024,
-      director: 'Mary Nakato',
-      cast: ['Comic One', 'Comic Two'],
-      language: 'Luganda',
-      isFeatured: true,
-      categoryId: comedyCategory?.id,
-    },
-    {
-      title: 'Heart of Uganda',
-      description: 'A touching documentary exploring the rich culture and traditions of Uganda.',
-      thumbnailUrl: 'https://via.placeholder.com/300x450/95E1D3/FFFFFF?text=Heart+of+Uganda',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      duration: 15,
-      releaseYear: 2023,
-      director: 'Peter Mukasa',
-      cast: [],
-      language: 'English',
-      isFeatured: false,
-      categoryId: ugandanCategory?.id,
-    },
+  const channelVideos = [
+    { id: '2FsOCsG9sI4', title: "Memories### from Kush films. A must watch u shouldn't miss." },
+    { id: '4olip0cT3n0', title: '#SMAU MEMBER DOWN. Coming soon' },
+    { id: '5SirTVKli4E', title: 'The Scar' },
+    { id: '5wT0tYU8RtA', title: 'TILL DARK, dropping soon from Kushfilms and HBC Media Company' },
+    { id: 'aggTXP-4qLw', title: 'Character building Kush cover Chris Evans maama wange.' },
+    { id: 'b0RNjn5J2s0', title: '#THE MILK MAN OFICIAL MOVIE# Obulema Sibuteesobola. OWAMATA ASUBIDWA EBINTU. #KUSH FILMS UGANDA#' },
+    { id: 'BB_GtSF5NJo', title: 'April 28, 2020' },
+    { id: 'BPUT6I9SF8M', title: 'SINGLE AND STRUGGLING@KUSH FILMS UGANDA. MAAMA' },
+    { id: 'CvPIZjgQewA', title: '"DADDY\'S DOLL" a must watch. @ kushfilms Uganda. kano kapya share, subscribe for more' },
+    { id: 'dfpL0wVXblk', title: 'Tragic. AKATUBAGIRO. coming soon.' },
+    { id: 'e3SQIoEKA8M', title: 'QUNUT PRAYER FROM MASJID JAMIA NDEJJE LUBUGUMU' },
+    { id: 'Ext_l0Nv4Rg', title: 'Lwaki? movie (WHY?) dropping soon,,  don\'t Miss' },
+    { id: 'fbH4-u60lQw', title: 'Just I like the improvement compared to the beginning.' },
+    { id: 'fn0fCHb9a48', title: 'Laba omuzimu wegusse abantu in one night. Omuzimu caught on camera killing people. LAST NIGHT MOTAGE' },
+    { id: 'GMsGQcCDfJ4', title: 'Behind the scenes new project (Trapped) don\'t miss' },
+    { id: 'GoMHoO0wYe0', title: 'BE SILENT. Girl has been used by the uncle @Kush films Uganda. LABAKO' },
+    { id: 'KHJ1he1KRJI', title: '#THE MILK MAN# MESSAGE DELIVERED #Ugandan skits. A must watch this so interesting coming soon.' },
+    { id: 'QkKJWN_e4Wk', title: '#SMAU MEMBER DOWN#. STINGY MEN ASSOCIATION UGANDA IN TROUBLE A MUST WATCH' },
+    { id: 'ruiLUhzXM2s', title: 'AM A VICTIM @ KUSH FILMS UGANDA. A must watch. uganda olemwa, see how a partraped his girl friend' },
+    { id: 'SAbCit7NmwY', title: 'WITH YOU MOVIE# Kush films Uganda new movie. lover zone' },
+    { id: 'Wxr06cNzb-I', title: '#SPEAK OUT# NEW KUSH BEST UGANDAN FILM' },
+    { id: 'xIQjBNYAXKg', title: 'Think before you act. A must watch' },
+    { id: 'xz6wFyNLhEQ', title: 'U don\'t need to miss this, watch, subscribe and share.' },
   ];
+
+  const sampleMovies = channelVideos.map((video, index) => ({
+    title: video.title,
+    description: `Official video from the KUSH FILMS UGANDA YouTube channel: ${video.title}`,
+    thumbnailUrl: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+    videoUrl: `https://www.youtube.com/watch?v=${video.id}`,
+    duration: 600 + ((index % 4) * 60),
+    releaseYear: 2020 + (index % 7),
+    director: 'Kush Films Uganda',
+    cast: [],
+    language: 'Luganda',
+    isFeatured: index < 8,
+    categoryId: ugandanCategory?.id,
+  }));
 
   for (const movieData of sampleMovies) {
     const { categoryId, ...data } = movieData;
     
+    const existing = await prisma.movie.findFirst({
+      where: { videoUrl: data.videoUrl },
+    });
+
+    if (existing) {
+      const movie = await prisma.movie.update({
+        where: { id: existing.id },
+        data,
+      });
+      console.log('✅ Movie updated:', movie.title);
+      continue;
+    }
+
     const movie = await prisma.movie.create({
       data: {
         ...data,

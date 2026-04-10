@@ -7,6 +7,7 @@ import HeroSection from "@/components/HeroSection";
 import MovieCard from "@/components/MovieCard";
 import FoodCard from "@/components/FoodCard";
 import SectionHeader from "@/components/SectionHeader";
+import HorizontalScrollRow from "@/components/HorizontalScrollRow";
 import apiClient from "@/lib/api/client";
 
 interface Movie {
@@ -72,23 +73,24 @@ export default function Home() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+          <HorizontalScrollRow>
             {movies.slice(0, 6).map((movie, index) => (
-              <MovieCard
-                key={movie.id}
-                id={movie.id}
-                title={movie.title}
-                year={movie.releaseYear}
-                posterPath={movie.thumbnailUrl}
-                videoUrl={movie.videoUrl}
-                duration={`${Math.floor(movie.duration / 60)}m`}
-                rating={movie.rating || 8.0}
-                category="Movie"
-                className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              />
+              <div key={movie.id} className="w-[170px] sm:w-[180px] md:w-[200px] flex-shrink-0">
+                <MovieCard
+                  id={movie.id}
+                  title={movie.title}
+                  year={movie.releaseYear}
+                  posterPath={movie.thumbnailUrl}
+                  videoUrl={movie.videoUrl}
+                  duration={`${Math.floor(movie.duration / 60)}m`}
+                  rating={movie.rating || 8.0}
+                  category="Movie"
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                />
+              </div>
             ))}
-          </div>
+          </HorizontalScrollRow>
         )}
       </section>
 
@@ -104,22 +106,23 @@ export default function Home() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <HorizontalScrollRow>
             {foods.slice(0, 3).map((food, index) => (
-              <FoodCard
-                key={food.id}
-                id={food.id}
-                name={food.name}
-                category={food.category}
-                price={food.price}
-                image={food.image}
-                description={food.description}
-                location={food.location}
-                className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              />
+              <div key={food.id} className="w-[280px] sm:w-[300px] md:w-[320px] flex-shrink-0">
+                <FoodCard
+                  id={food.id}
+                  name={food.name}
+                  category={food.category}
+                  price={food.price}
+                  image={food.image}
+                  description={food.description}
+                  location={food.location}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                />
+              </div>
             ))}
-          </div>
+          </HorizontalScrollRow>
         )}
       </section>
 
