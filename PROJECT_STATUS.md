@@ -1,5 +1,20 @@
 # 🎉 Kush Films - Project Setup Complete!
 
+## 🔄 Latest Update (April 10, 2026)
+
+- Added YouTube-based dummy video content from KUSH FILMS UGANDA channel into seeded movie data.
+- Added dedicated `Videos` page and linked it from navbar.
+- Reworked movie card interactions:
+   - Play modal only opens from play button.
+   - Title/text routes to details page.
+   - Removed extra "View details" button.
+- Improved small-screen stability and responsiveness across core pages:
+   - Reduced mobile jitter caused by hover scaling and sticky panels.
+   - Added global horizontal overflow protection.
+   - Tuned hero section animations for mobile.
+- Added reusable horizontal scrolling rows with left/right controls on Home sections.
+- Fixed backend TypeScript module resolution deprecation and frontend CSS typing/config issues.
+
 ## ✅ What's Been Created
 
 ### Backend (Node.js + Fastify + Prisma)
